@@ -1,0 +1,860 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Boletim de Câmera</title>
+<meta name="description" content="Boletim de câmera para o AC: kit da diária, registro de takes e exportação para o Offload Report.">
+<meta name="theme-color" content="#14161a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Boletim">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: ferramenta de uma mão — cabeçalho fixo com câmera/rolo, faixas de botões empilhadas, doca fixa (registrar + abas). Escuro primeiro: uso no set. */
+:root{
+  --bg:#14161a; --surface:#1c1f24; --surface-2:#252930; --line:#31363e;
+  --fg:#ecebe6; --muted:#949aa2;
+  --accent:#f2a33a; --accent-ink:#1b1206; --accent-soft:rgba(242,163,58,.15);
+  --good:#5bc58a; --bad:#ec6c5f; --warn:#e3c35a;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Consolas,monospace;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f2f1ed; --surface:#ffffff; --surface-2:#e8e6e0; --line:#d5d2ca;
+    --fg:#1a1c1f; --muted:#5b616a;
+    --accent:#b0640a; --accent-ink:#ffffff; --accent-soft:rgba(176,100,10,.12);
+    --good:#1c8247; --bad:#bf3a2b; --warn:#8f720c;
+    color-scheme:light;
+  }
+}
+:root[data-theme="light"]{
+  --bg:#f2f1ed; --surface:#ffffff; --surface-2:#e8e6e0; --line:#d5d2ca;
+  --fg:#1a1c1f; --muted:#5b616a;
+  --accent:#b0640a; --accent-ink:#ffffff; --accent-soft:rgba(176,100,10,.12);
+  --good:#1c8247; --bad:#bf3a2b; --warn:#8f720c;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0}
+[hidden]{display:none!important}
+img{max-width:100%}
+body{
+  background:var(--bg); color:var(--fg); font-family:var(--f-body); font-size:15px; line-height:1.4;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:0 calc(150px + env(safe-area-inset-bottom,0px));
+  -webkit-tap-highlight-color:transparent;
+}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:640px;margin:0 auto}
+
+/* Cabeçalho */
+.top{
+  position:sticky; top:env(safe-area-inset-top,0px); z-index:5; background:var(--bg);
+  margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px))) calc(-1 * max(16px,env(safe-area-inset-right,0px)));
+  padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));
+  border-bottom:1px solid var(--line);
+}
+.top-in{display:flex;align-items:center;gap:12px;padding-block:10px;flex-wrap:wrap}
+.units{display:flex;gap:6px}
+.unit{
+  font-family:var(--f-display);font-weight:700;font-size:17px;letter-spacing:.04em;
+  min-width:44px;height:40px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);
+}
+.unit[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.reel{font-family:var(--f-mono);font-weight:600;font-size:18px;letter-spacing:.02em;margin-left:auto;font-variant-numeric:tabular-nums}
+.reel small{display:block;font-family:var(--f-body);font-weight:500;font-size:11px;color:var(--muted);letter-spacing:0;text-align:right}
+.sync{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);width:100%;margin-top:-4px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.dot.ok{background:var(--good)} .dot.warn{background:var(--warn)} .dot.bad{background:var(--bad)}
+
+/* Blocos */
+main{display:flex;flex-direction:column;gap:10px;padding-top:12px}
+.blk{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.blk-h{display:flex;align-items:baseline;gap:10px;min-width:0}
+.lbl{font-family:var(--f-display);font-weight:600;font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.val{margin-left:auto;font-family:var(--f-mono);font-weight:600;font-size:15px;text-align:right;min-width:0;overflow-wrap:anywhere}
+.hint{font-size:12.5px;color:var(--muted)}
+.sub{font-family:var(--f-display);font-weight:600;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+
+.strip{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-inline:-12px;padding-inline:12px;scroll-padding-inline:12px;padding-bottom:2px}
+.strip::-webkit-scrollbar{display:none}
+.wrapchips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{
+  flex:none;min-width:52px;height:46px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);
+  font-family:var(--f-mono);font-weight:600;font-size:16px;font-variant-numeric:tabular-nums;
+  display:inline-flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;
+}
+.chip small{font-family:var(--f-body);font-weight:500;font-size:10.5px;color:var(--muted);margin-top:2px;letter-spacing:.02em}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip[aria-pressed="true"] small{color:var(--accent-ink);opacity:.8}
+.chip.txt{font-family:var(--f-body);font-size:14px;font-weight:600}
+.chip.lens{min-width:64px;height:54px}
+.chip.lens b{font-size:18px}
+.chip.base{position:relative}
+.chip.base::after{content:"";position:absolute;top:5px;right:5px;width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.6}
+
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;flex:none}
+.seg button{border:0;background:transparent;padding:6px 12px;font-family:var(--f-mono);font-weight:600;font-size:14px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.row2{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mini{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.mini input{width:84px}
+
+input[type=text],input[type=number],input[type=date],select{
+  height:44px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);padding:0 10px;min-width:0;width:100%;font-size:16px
+}
+input.mono{font-family:var(--f-mono);font-weight:600}
+
+/* Claquete */
+.slate{display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:8px}
+.slate label{display:flex;flex-direction:column;gap:4px;min-width:0}
+.slate label span{font-family:var(--f-display);font-weight:600;font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.slate input{font-family:var(--f-mono);font-weight:600;font-size:20px;text-align:center;height:50px}
+.step{display:flex;align-items:stretch;height:50px;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surface-2)}
+.step button{width:40px;border:0;background:transparent;font-size:22px;font-weight:600;flex:none}
+.step output{flex:1;display:flex;align-items:center;justify-content:center;font-family:var(--f-mono);font-weight:600;font-size:20px;font-variant-numeric:tabular-nums}
+
+/* Prévia da linha do boletim */
+.preview{border:1px dashed var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.preview .lbl{font-size:12px}
+.preview code{font-family:var(--f-mono);font-size:12.5px;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--fg)}
+.preview code.dim{color:var(--muted)}
+
+.aval{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.aval .chip{width:100%;font-family:var(--f-body);font-size:15px}
+.aval .chip[data-v="Boa"][aria-pressed="true"]{background:var(--good);border-color:var(--good);color:#fff}
+.aval .chip[data-v="NG"][aria-pressed="true"],.aval .chip[data-v="NV"][aria-pressed="true"]{background:var(--bad);border-color:var(--bad);color:#fff}
+
+/* Doca */
+.dock{
+  position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--bg);border-top:1px solid var(--line);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.dock .wrap{display:flex;flex-direction:column;gap:8px;padding-top:10px}
+.reg{
+  height:56px;border-radius:12px;border:0;background:var(--accent);color:var(--accent-ink);
+  font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.05em;text-transform:uppercase;
+}
+.reg:active{transform:translateY(1px)}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr)}
+.tabs button{border:0;background:transparent;height:46px;font-family:var(--f-display);font-weight:600;font-size:16px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border-top:2px solid transparent}
+.tabs button[aria-current="page"]{color:var(--fg);border-top-color:var(--accent)}
+
+.btn{height:44px;padding:0 14px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);font-weight:600;font-size:14px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--bad)}
+.btn.armed{background:var(--bad);border-color:var(--bad);color:#fff}
+.btn.sm{height:36px;padding:0 10px;font-size:13px}
+
+/* Boletim */
+.group{display:flex;flex-direction:column;gap:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.group-h{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.group-h b{font-family:var(--f-mono);font-size:17px}
+.group-h span{font-size:12.5px;color:var(--muted)}
+.group-h .btn{margin-left:auto}
+.take{border-bottom:1px solid var(--line)}
+.take:last-child{border-bottom:0}
+.take-row{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:center;width:100%;text-align:left;border:0;background:transparent;padding:10px 12px}
+.take-row .clip{font-family:var(--f-mono);font-weight:600;font-size:15px}
+.take-row .sl{font-weight:600;font-size:14px}
+.take-row .spec{grid-column:2/4;font-family:var(--f-mono);font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.pill{font-size:12px;font-weight:600;padding:3px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+.pill.Boa{background:var(--good);border-color:var(--good);color:#fff}
+.pill.OK{border-color:var(--good);color:var(--good)}
+.pill.NG,.pill.NV{background:var(--bad);border-color:var(--bad);color:#fff}
+.take-detail{padding:0 12px 12px;display:flex;flex-direction:column;gap:8px}
+.take-detail dl{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;margin:0;font-size:13px}
+.take-detail dt{color:var(--muted)}
+.take-detail dd{margin:0;font-family:var(--f-mono);overflow-wrap:anywhere}
+.empty{padding:28px 16px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
+.empty b{display:block;color:var(--fg);font-family:var(--f-display);font-size:20px;letter-spacing:.04em;margin-bottom:4px}
+
+/* Kit */
+.unitcard{display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+.unitcard input,.unitcard select{background:var(--surface)}
+.unitcard .u{font-family:var(--f-display);font-weight:700;font-size:18px;letter-spacing:.06em}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid2 label,.form label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);min-width:0}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end}
+.form .full{grid-column:1/-1}
+.series{display:flex;flex-direction:column;gap:6px}
+.series-h{display:flex;gap:8px;align-items:baseline;font-size:13px}
+.series-h b{font-weight:600}
+.series-h span{color:var(--muted);font-size:12px}
+details.more summary{cursor:pointer;font-weight:600;font-size:14px;padding:4px 0;color:var(--accent)}
+details.more[open] summary{margin-bottom:8px}
+.note{font-size:12.5px;color:var(--muted);border-left:3px solid var(--warn);padding:4px 10px}
+
+/* Avisos */
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));z-index:8;
+  background:var(--fg);color:var(--bg);border-radius:10px;padding:10px 12px 10px 14px;display:flex;gap:12px;align-items:center;
+  max-width:calc(100% - 32px);font-weight:600;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.3)}
+.toast button{border:0;background:transparent;color:var(--accent);font-weight:700;font-size:14px;padding:4px}
+.modal{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;
+  padding:16px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.modal-in{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;width:100%;max-width:640px;display:flex;flex-direction:column;gap:10px;max-height:85vh}
+.modal textarea{width:100%;min-height:240px;flex:1;font-family:var(--f-mono);font-size:12px;background:var(--surface-2);color:var(--fg);border:1px solid var(--line);border-radius:9px;padding:10px;resize:vertical}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+@media (min-width:560px){ .aval{grid-template-columns:repeat(4,minmax(0,140px))} }
+</style>
+</head>
+<body>
+
+<header class="top"><div class="wrap top-in">
+  <div class="units" id="units"></div>
+  <div class="reel" id="reel"></div>
+  <div class="sync" id="sync"><span class="dot"></span><span>Carregando…</span></div>
+</div></header>
+
+<main class="wrap" id="view"></main>
+
+<div class="dock"><div class="wrap">
+  <button type="button" class="reg" id="regBtn" data-act="register">Registrar</button>
+  <nav class="tabs" aria-label="Seções">
+    <button type="button" data-act="tab" data-v="take">Take</button>
+    <button type="button" data-act="tab" data-v="kit">Kit</button>
+    <button type="button" data-act="tab" data-v="boletim">Boletim</button>
+  </nav>
+</div></div>
+
+<div class="toast" id="toast" hidden><span id="toastMsg"></span><button type="button" data-act="undo" id="toastUndo">Desfazer</button></div>
+<div class="modal" id="modal" hidden><div class="modal-in">
+  <div class="blk-h"><span class="lbl" id="modalTitle">Arquivo</span><button type="button" class="btn sm" data-act="closeModal" style="margin-left:auto">Fechar</button></div>
+  <p class="hint" style="margin:0">O download não está disponível aqui. Copie o texto e salve como arquivo com o nome acima.</p>
+  <textarea id="modalText" readonly></textarea>
+  <button type="button" class="btn pri" data-act="copyModal">Copiar texto</button>
+</div></div>
+
+<input type="file" id="restoreFile" accept=".json,application/json" hidden>
+
+<script>
+/* ===================== Catálogo (exemplo: ARRI + DZOFilm) ===================== */
+const EI_ARRI=[160,200,250,320,400,500,640,800,1000,1280,1600,2000,2560,3200];
+const CODECS_ARRI=["ARRIRAW","ProRes 4444 XQ","ProRes 4444","ProRes 422 HQ"];
+const CAMERAS=[
+  {id:"arri-alexa-35",brand:"ARRI",name:"ALEXA 35",sensor:"Super 35 4.6K",ei:[...EI_ARRI,4000,5120,6400],base:800,nd:[0.6,1.2,1.8],sh:"deg",isoLabel:"EI",codecs:CODECS_ARRI},
+  {id:"arri-alexa-mini-lf",brand:"ARRI",name:"ALEXA Mini LF",sensor:"Large Format",ei:EI_ARRI,base:800,nd:[0.6,1.2,1.8],sh:"deg",isoLabel:"EI",codecs:CODECS_ARRI},
+  {id:"arri-alexa-lf",brand:"ARRI",name:"ALEXA LF",sensor:"Large Format",ei:EI_ARRI,base:800,nd:[0.6,1.2,1.8],sh:"deg",isoLabel:"EI",codecs:CODECS_ARRI},
+  {id:"arri-alexa-mini",brand:"ARRI",name:"ALEXA Mini",sensor:"Super 35",ei:EI_ARRI,base:800,nd:[0.6,1.2,2.1],sh:"deg",isoLabel:"EI",codecs:CODECS_ARRI},
+  {id:"arri-amira",brand:"ARRI",name:"AMIRA",sensor:"Super 35",ei:EI_ARRI,base:800,nd:[0.6,1.2,2.1],sh:"deg",isoLabel:"EI",codecs:CODECS_ARRI},
+  {id:"arri-alexa-65",brand:"ARRI",name:"ALEXA 65",sensor:"65 mm",ei:EI_ARRI,base:800,nd:[],sh:"deg",isoLabel:"EI",codecs:["ARRIRAW"]},
+];
+function primes(key,series,fmt,list){return list.map(([f,t,tag])=>({id:`dzo-${key}-${f}`,brand:"DZOFilm",short:"DZO",series,seriesShort:series.replace(/ (Prime|Zoom)$/,""),fmt,focal:f,maxT:t,tag:tag||"",zoom:false}))}
+function zooms(key,series,fmt,list){return list.map(([a,b,t])=>({id:`dzo-${key}-${a}-${b}`,brand:"DZOFilm",short:"DZO",series,seriesShort:series.replace(/ (Prime|Zoom)$/,""),fmt,focalMin:a,focalMax:b,maxT:t,zoom:true}))}
+const LENSES=[
+  ...primes("vespid","Vespid Prime","FF",[[12,2.8],[16,2.8],[21,2.1],[25,2.1],[35,2.1],[40,2.1],[50,2.1],[75,2.1],[90,2.8,"Macro"],[100,2.1],[125,2.1]]),
+  ...primes("arles","Arles Prime","FF",[[25,1.4],[35,1.4],[40,1.4],[50,1.4],[75,1.4],[100,1.4]]),
+  ...primes("gnosis","Gnosis Macro","FF",[[24,2.8],[32,2.8],[65,2.8],[90,2.8]]),
+  ...zooms("catta","Catta Zoom","FF",[[18,35,2.9],[35,80,2.9],[70,135,2.9]]),
+  ...zooms("pictor","Pictor Zoom","S35",[[14,30,2.8],[20,55,2.8],[50,125,2.8]]),
+];
+const ND_VALS=["0.3","0.6","0.9","1.2","1.5","1.8","2.1"];
+const FILTERS=[
+  ...ND_VALS.map(v=>({id:`f-nd-${v}`,group:"ND",label:v,code:`ND${v}`})),
+  ...ND_VALS.map(v=>({id:`f-irnd-${v}`,group:"IRND",label:v,code:`IRND${v}`})),
+  ...["1/8","1/4","1/2","1"].map(v=>({id:`f-bpm-${v}`,group:"Black Pro-Mist",label:v,code:`BPM${v}`})),
+  ...["1/8","1/4","1/2"].map(v=>({id:`f-hbm-${v}`,group:"Hollywood Black Magic",label:v,code:`HBM${v}`})),
+  ...["1","2"].map(v=>({id:`f-gg-${v}`,group:"Glimmerglass",label:v,code:`GG${v}`})),
+  {id:"f-pola",group:"Polarizador",label:"Pola",code:"Pola"},
+  ...["+1/2","+1","+2"].map(v=>({id:`f-diop-${v}`,group:"Dioptria",label:v,code:`Diop${v}`})),
+];
+const T_THIRDS=[1,1.1,1.2,1.4,1.6,1.8,2,2.2,2.5,2.8,3.2,3.5,4,4.5,5,5.6,6.3,7.1,8,9,10,11,13,14,16,18,20,22];
+const SH_DEG=[11.2,22.5,45,90,144,172.8,180,216,270,360];
+const SH_FRAC=[24,25,30,48,50,60,96,100,120,125,250,500,1000,2000];
+const FPS=[23.976,24,25,29.97,30,48,50,60,72,96,100,120];
+const WB=[2800,3200,3600,4300,5000,5600,6500,7500];
+const ZOOM_MARKS=[14,16,18,20,21,24,25,28,30,32,35,40,45,50,55,60,65,70,75,80,85,90,100,110,120,125,135];
+const AVAL=["Boa","OK","NV","NG"];
+
+/* ===================== Utilidades ===================== */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad3=n=>String(n).padStart(3,"0");
+const clone=o=>JSON.parse(JSON.stringify(o));
+const fmtNum=x=>String(Math.round(x*10)/10);
+function today(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+const brDate=s=>{const [y,m,d]=String(s||"").split("-");return d?`${d}/${m}/${y}`:s};
+const newId=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);
+
+/* ===================== Estado ===================== */
+let S=null, view="take", viewDay=null, openTake=null, armed=null, lastUndo=null;
+const allCams=()=>CAMERAS.concat(S.cfg.custom.cameras);
+const allLenses=()=>LENSES.concat(S.cfg.custom.lenses);
+const allFilters=()=>FILTERS.concat(S.cfg.custom.filters);
+const cam=id=>allCams().find(c=>c.id===id);
+const lens=id=>allLenses().find(l=>l.id===id);
+const filt=id=>allFilters().find(f=>f.id===id);
+const U=()=>S.cfg.units[S.cfg.active];
+const day=()=>S.days[S.cfg.diariaKey];
+
+function newUnit(letter,camId){
+  const C=cam(camId)||CAMERAS[0];
+  const lensId=(S&&S.cfg.kitLenses[0])||"dzo-vespid-35";
+  const L=lens(lensId);
+  return {camId:C.id,codec:C.codecs[0],roll:letter+"001",clip:1,slate:{cena:"1",plano:"1",take:1},
+    cur:{lensId,focal:L&&L.zoom?L.focalMin:null,t:Math.max(2.8,L?L.maxT:2.8),shMode:C.sh,shDeg:180,shFrac:50,fps:24,iso:C.base,wb:5600,ndInt:null,filters:[],aval:"",obs:""}};
+}
+function fresh(){
+  const key="d1-"+today();
+  S={cfg:{v:1,updatedAt:0,diariaKey:key,diarias:[{key,n:1,date:today()}],producao:"",units:{},unitOrder:["A"],active:"A",
+      kitLenses:["dzo-vespid-25","dzo-vespid-35","dzo-vespid-50","dzo-vespid-75","dzo-vespid-100","dzo-catta-35-80"],
+      kitFilters:["f-nd-0.3","f-nd-0.6","f-nd-0.9","f-nd-1.2","f-pola","f-bpm-1/8","f-bpm-1/4"],
+      custom:{cameras:[],lenses:[],filters:[]}},
+     days:{[key]:{key,updatedAt:0,takes:[]}}};
+  S.cfg.units.A=newUnit("A","arri-alexa-mini-lf");
+  return S;
+}
+
+/* ===================== Persistência: só no aparelho, com backup manual ===================== */
+const LS="boletim-camera-v1";
+let localOk=true, pendingRestore=null, installEvt=null;
+function loadLocal(){try{const r=localStorage.getItem(LS);if(r){const o=JSON.parse(r);if(o&&o.cfg&&o.days)return o}}catch(e){}return null}
+function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(S));localOk=true}catch(e){localOk=false}}
+function commit(dayKey){
+  S.cfg.updatedAt=Date.now();
+  if(dayKey&&S.days[dayKey]) S.days[dayKey].updatedAt=Date.now();
+  saveLocal(); renderSync();
+}
+async function askPersist(){try{if(navigator.storage&&navigator.storage.persist&&!(await navigator.storage.persisted()))await navigator.storage.persist()}catch(e){}}
+const isStandalone=()=>{try{return matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}catch(e){return false}};
+const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+function ago(ts){
+  if(!ts) return "";
+  const m=Math.round((Date.now()-ts)/60000); if(m<1) return "agora"; if(m<60) return `há ${m} min`;
+  const h=Math.round(m/60); if(h<24) return `há ${h} h`; const d=Math.round(h/24); return `há ${d} ${d===1?"dia":"dias"}`;
+}
+function lastTakeTs(){let t=0;Object.values(S.days).forEach(d=>d.takes.forEach(x=>{if(x.ts>t)t=x.ts}));return t}
+const needsBackup=()=>{const lt=lastTakeTs();return lt>0&&(!S.cfg.lastBackup||S.cfg.lastBackup<lt)};
+const backupData=()=>JSON.stringify({app:"boletim-camera",v:1,exportedAt:Date.now(),data:S});
+function parseBackup(text){
+  const o=JSON.parse(text), d=o&&o.app==="boletim-camera"?o.data:o;
+  if(!d||!d.cfg||!d.days||!d.cfg.units||!d.cfg.diarias||!d.cfg.unitOrder) throw new Error("formato");
+  return {data:d,exportedAt:o.exportedAt||0};
+}
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=e;if(view==="kit")render()});
+window.addEventListener("appinstalled",()=>{installEvt=null;toast("App instalado");if(view==="kit")render()});
+
+/* ===================== Boletim: montagem do texto ===================== */
+const tLabel=t=>"T"+t;
+function lensLabel(L,focal){
+  if(!L) return "—";
+  const name=[L.short,L.seriesShort].filter(Boolean).join(" ");
+  if(L.zoom) return `${name} ${L.focalMin}-${L.focalMax}mm @${focal||L.focalMin}mm`;
+  return `${name} ${L.focal}mm`;
+}
+function shText(c){return c.shMode==="deg"?fmtNum(c.shDeg)+"°":"1/"+c.shFrac}
+function shEquiv(c){
+  const fps=Number(c.fps)||24;
+  if(c.shMode==="deg") return "≈ 1/"+Math.round(360*fps/c.shDeg)+" s a "+fps+" fps";
+  return "≈ "+fmtNum(360*fps/c.shFrac)+"° a "+fps+" fps";
+}
+function snapshot(letter){
+  const u=S.cfg.units[letter], C=cam(u.camId), c=u.cur, L=lens(c.lensId);
+  const filters=[]; if(c.ndInt) filters.push(`ND${c.ndInt}(int)`);
+  c.filters.forEach(id=>{const F=filt(id); if(F) filters.push(F.code)});
+  return {id:newId(),unit:letter,cam:C?C.name:"—",codec:u.codec||"",roll:u.roll,clip:u.clip,
+    cena:u.slate.cena,plano:u.slate.plano,take:u.slate.take,lens:lensLabel(L,c.focal),
+    t:c.t,sh:shText(c),shEq:shEquiv(c),fps:c.fps,isoLabel:(C&&C.isoLabel)||"ISO",iso:c.iso,wb:c.wb,
+    filters,aval:c.aval,obs:(c.obs||"").trim(),ts:Date.now()};
+}
+const ajustes=t=>[tLabel(t.t),t.sh,t.fps+"fps",t.isoLabel+t.iso,t.wb+"K",...t.filters].join(" ");
+const lensLine=t=>`Lente ${t.lens} ${ajustes(t)}`;
+function clipLine(t){
+  const tok=s=>String(s||"").replace(/\s+/g,"")||"-";
+  let s=`C${pad3(t.clip)} Cena ${tok(t.cena)} Plano ${tok(t.plano)} Take ${parseInt(t.take,10)||1}`;
+  if(t.aval) s+=` - ${t.aval}`;
+  if(t.obs) s+=` Obs: ${t.obs.replace(/\s+/g," ")}`;
+  return s;
+}
+function rollTxt(roll,takes){
+  const lines=[`CARD #${roll}`]; let last="";
+  takes.slice().sort((a,b)=>a.clip-b.clip||a.ts-b.ts).forEach(t=>{
+    const ll=lensLine(t); if(ll!==last){lines.push(ll);last=ll}
+    lines.push(clipLine(t));
+  });
+  return lines.join("\r\n")+"\r\n";
+}
+function dayCsv(d,meta){
+  const cols=["Diária","Data","Câmera","Modelo","Codec","Rolo","Clipe","Cena","Plano","Take","Lente","T","Shutter","Shutter equiv.","FPS","ISO/EI","WB","Filtros","Avaliação","Obs","Hora"];
+  const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
+  const rows=d.takes.map(t=>[meta.n,brDate(meta.date),t.unit,t.cam,t.codec,t.roll,"C"+pad3(t.clip),t.cena,t.plano,t.take,t.lens,tLabel(t.t),t.sh,t.shEq,t.fps,t.isoLabel+" "+t.iso,t.wb+"K",t.filters.join(" + "),t.aval,t.obs,new Date(t.ts).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})]);
+  return "﻿"+[cols,...rows].map(r=>r.map(q).join(";")).join("\r\n")+"\r\n";
+}
+
+/* ===================== Render ===================== */
+function chip(act,f,v,label,pressed,extra=""){
+  return `<button type="button" class="chip ${extra}" data-act="${act}" data-f="${esc(f)}" data-v="${esc(v)}" aria-pressed="${pressed?"true":"false"}">${label}</button>`;
+}
+function render(){
+  if(!S.days[S.cfg.diariaKey]) S.days[S.cfg.diariaKey]={key:S.cfg.diariaKey,updatedAt:0,takes:[]};
+  if(!S.cfg.units[S.cfg.active]) S.cfg.active=S.cfg.unitOrder[0];
+  const pos={}; document.querySelectorAll(".strip[id]").forEach(s=>pos[s.id]=s.scrollLeft);
+  renderHeader();
+  const v=$("#view");
+  v.innerHTML=view==="take"?viewTake():view==="kit"?viewKit():viewBoletim();
+  document.querySelectorAll(".tabs button").forEach(b=>{if(b.dataset.v===view)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
+  $("#regBtn").hidden=view!=="take";
+  document.querySelectorAll(".strip[id]").forEach(s=>{
+    if(pos[s.id]!=null){s.scrollLeft=pos[s.id];return}
+    const on=s.querySelector('[aria-pressed="true"]');
+    if(on) s.scrollLeft=on.offsetLeft-s.clientWidth/2+on.offsetWidth/2;
+  });
+  updateDock(); renderSync();
+}
+function renderHeader(){
+  $("#units").innerHTML=S.cfg.unitOrder.map(k=>`<button type="button" class="unit" data-act="unit" data-v="${k}" aria-pressed="${k===S.cfg.active}">${k}</button>`).join("");
+  const u=U(), C=cam(u.camId);
+  $("#reel").innerHTML=`${esc(u.roll)}<span style="color:var(--muted)">C</span>${pad3(u.clip)}<small>${esc(C?C.name:"")}</small>`;
+}
+function updateDock(){const u=U();$("#regBtn").textContent=`Registrar ${u.roll}C${pad3(u.clip)}`}
+function renderSync(){
+  const meta=curDiariaMeta();
+  let cls="ok", txt="Salvo neste aparelho";
+  if(!localOk){cls="bad";txt="Não está salvando — faça backup agora"}
+  else if(needsBackup()){cls="warn";txt=S.cfg.lastBackup?`Salvo no aparelho · backup ${ago(S.cfg.lastBackup)}`:"Salvo no aparelho · sem backup ainda"}
+  else if(S.cfg.lastBackup){txt=`Salvo no aparelho · backup ${ago(S.cfg.lastBackup)}`}
+  $("#sync").innerHTML=`<span class="dot ${cls}"></span><span>${esc(txt)} · Diária ${esc(meta.n)}</span>`;
+}
+const curDiariaMeta=()=>S.cfg.diarias.find(d=>d.key===S.cfg.diariaKey)||{n:"?",date:""};
+
+function previewHTML(){
+  const t=snapshot(S.cfg.active);
+  return `<span class="lbl">Linha do boletim · ${esc(t.roll)}.txt</span><code class="dim">${esc(lensLine(t))}</code><code>${esc(clipLine(t))}</code>`;
+}
+function updatePreview(){const p=$("#preview");if(p)p.innerHTML=previewHTML()}
+
+function viewTake(){
+  const u=U(), C=cam(u.camId)||CAMERAS[0], c=u.cur, L=lens(c.lensId);
+  const kit=allLenses().filter(l=>S.cfg.kitLenses.includes(l.id)||l.id===c.lensId);
+  const lensChips=kit.map(l=>chip("set","lensId",l.id,`<b>${l.zoom?`${l.focalMin}–${l.focalMax}`:l.focal}</b><small>${esc(l.seriesShort)}${l.tag?" "+esc(l.tag):""}</small>`,l.id===c.lensId,"lens")).join("");
+  let zoomBlk="";
+  if(L&&L.zoom){
+    const marks=[...new Set([L.focalMin,...ZOOM_MARKS.filter(m=>m>L.focalMin&&m<L.focalMax),L.focalMax])];
+    zoomBlk=`<div class="sub">Distância focal</div><div class="strip" id="s-focal">${marks.map(m=>chip("set","focal",m,m,Number(c.focal)===m)).join("")}</div>
+      <label class="mini">Outra <input type="number" class="mono" inputmode="numeric" id="in-focal" data-bind="focal" min="${L.focalMin}" max="${L.focalMax}" placeholder="mm"></label>`;
+  }
+  const maxT=L?L.maxT:1;
+  const ts=[...new Set([maxT,...T_THIRDS.filter(x=>x>maxT+0.001)])];
+  const shList=c.shMode==="deg"?SH_DEG:SH_FRAC;
+  const nd=C.nd||[];
+  const kitF=allFilters().filter(f=>S.cfg.kitFilters.includes(f.id)||c.filters.includes(f.id));
+  const isoL=C.isoLabel||"ISO";
+  return `
+  <div class="preview" id="preview">${previewHTML()}</div>
+
+  <section class="blk">
+    <div class="slate">
+      <label><span>Cena</span><input type="text" id="in-cena" data-bind="cena" value="${esc(u.slate.cena)}" autocomplete="off" autocapitalize="characters"></label>
+      <label><span>Plano</span><input type="text" id="in-plano" data-bind="plano" value="${esc(u.slate.plano)}" autocomplete="off" autocapitalize="characters"></label>
+      <label><span>Take</span><div class="step"><button type="button" data-act="takeStep" data-v="-1" aria-label="Take anterior">−</button><output>${esc(u.slate.take)}</output><button type="button" data-act="takeStep" data-v="1" aria-label="Próximo take">+</button></div></label>
+    </div>
+  </section>
+
+  <section class="blk">
+    <div class="blk-h"><span class="lbl">Lente</span><span class="val">${esc(lensLabel(L,c.focal))}</span></div>
+    ${kit.length?`<div class="strip" id="s-lens">${lensChips}</div>`:`<p class="hint">Nenhuma lente no kit. Escolha as lentes na aba Kit.</p>`}
+    ${zoomBlk}
+  </section>
+
+  <section class="blk">
+    <div class="blk-h"><span class="lbl">Íris</span><span class="val">${tLabel(c.t)}</span></div>
+    <div class="strip" id="s-t">${ts.map(x=>chip("set","t",x,x===maxT?`${x}<small>aberta</small>`:x,Number(c.t)===x)).join("")}</div>
+  </section>
+
+  <section class="blk">
+    <div class="blk-h"><span class="lbl">Shutter</span>
+      <div class="seg" role="group" aria-label="Unidade do shutter"><button type="button" data-act="shMode" data-v="deg" aria-pressed="${c.shMode==="deg"}">Graus</button><button type="button" data-act="shMode" data-v="frac" aria-pressed="${c.shMode==="frac"}">Fração</button></div>
+      <span class="val">${esc(shText(c))}</span></div>
+    <div class="strip" id="s-sh-${c.shMode}">${shList.map(x=>c.shMode==="deg"?chip("set","shDeg",x,fmtNum(x)+"°",Number(c.shDeg)===x):chip("set","shFrac",x,"1/"+x,Number(c.shFrac)===x)).join("")}</div>
+    <div class="row2"><span class="hint">${esc(shEquiv(c))}</span>
+      <label class="mini" style="margin-left:auto">Outro <input type="number" class="mono" inputmode="decimal" id="in-sh" data-bind="${c.shMode==="deg"?"shDeg":"shFrac"}" placeholder="${c.shMode==="deg"?"graus":"1/x"}"></label></div>
+  </section>
+
+  <section class="blk">
+    <div class="blk-h"><span class="lbl">Quadros/s</span><span class="val">${esc(c.fps)} fps</span></div>
+    <div class="strip" id="s-fps">${FPS.map(x=>chip("set","fps",x,x,Number(c.fps)===x)).join("")}</div>
+  </section>
+
+  <section class="blk">
+    <div class="blk-h"><span class="lbl">${esc(isoL)}</span><span class="val">${esc(isoL)} ${esc(c.iso)}</span></div>
+    <div class="strip" id="s-iso">${C.ei.map(x=>chip("set","iso",x,x,Number(c.iso)===x,x===C.base?"base":"")).join("")}</div>
+    <span class="hint">O ponto marca o ${esc(isoL)} base da ${esc(C.name)} (${esc(C.base)}).</span>
+  </section>
+
+  <section class="blk">
+    <div class="blk-h"><span class="lbl">Temp. de cor</span><span class="val">${esc(c.wb)}K</span></div>
+    <div class="strip" id="s-wb">${WB.map(x=>chip("set","wb",x,x,Number(c.wb)===x)).join("")}</div>
+    <label class="mini">Outra <input type="number" class="mono" inputmode="numeric" id="in-wb" data-bind="wb" placeholder="K"></label>
+  </section>
+
+  <section class="blk">
+    <div class="blk-h"><span class="lbl">Filtros</span><span class="val">${esc([c.ndInt?`ND${c.ndInt}(int)`:"",...c.filters.map(id=>(filt(id)||{}).code)].filter(Boolean).join(" ")||"nenhum")}</span></div>
+    ${nd.length?`<div class="sub">ND interno da câmera</div><div class="wrapchips">${chip("ndInt","nd","",`—`,!c.ndInt,"txt")}${nd.map(x=>chip("ndInt","nd",x,x,c.ndInt===x)).join("")}</div>`:""}
+    <div class="sub">Na matte box</div>
+    ${kitF.length?`<div class="wrapchips">${kitF.map(f=>chip("filter","f",f.id,`${esc(f.label)}<small>${esc(f.group)}</small>`,c.filters.includes(f.id),f.group.length>4?"txt":"")).join("")}</div>`:`<p class="hint">Nenhum filtro no kit. Escolha os filtros na aba Kit.</p>`}
+  </section>
+
+  <section class="blk">
+    <div class="blk-h"><span class="lbl">Avaliação</span><span class="hint" style="margin-left:auto">opcional</span></div>
+    <div class="aval">${AVAL.map(a=>chip("aval","aval",a,a,c.aval===a,"txt")).join("")}</div>
+    <input type="text" id="in-obs" data-bind="obs" value="${esc(c.obs)}" placeholder="Obs. (ex.: claquete errada, foco buscou)" autocomplete="off">
+  </section>`;
+}
+
+function viewBoletim(){
+  const key=viewDay&&S.days[viewDay]?viewDay:S.cfg.diariaKey;
+  const meta=S.cfg.diarias.find(d=>d.key===key)||{n:"?",date:""};
+  const d=S.days[key]||{takes:[]};
+  const opts=S.cfg.diarias.slice().reverse().map(x=>`<option value="${esc(x.key)}" ${x.key===key?"selected":""}>Diária ${esc(x.n)} · ${esc(brDate(x.date))}${x.key===S.cfg.diariaKey?" (atual)":""}</option>`).join("");
+  const groups=[]; const idx={};
+  d.takes.forEach(t=>{const g=t.unit+"|"+t.roll; if(!(g in idx)){idx[g]=groups.length;groups.push({unit:t.unit,roll:t.roll,cam:t.cam,takes:[]})} groups[idx[g]].takes.push(t)});
+  const body=groups.length?groups.map(g=>`
+    <div class="group">
+      <div class="group-h"><b>${esc(g.roll)}</b><span>CAM ${esc(g.unit)} · ${esc(g.cam)} · ${g.takes.length} ${g.takes.length===1?"clipe":"clipes"}</span>
+        <button type="button" class="btn sm" data-act="exportTxt" data-k="${esc(key)}" data-v="${esc(g.unit+"|"+g.roll)}">Baixar ${esc(g.roll)}.txt</button></div>
+      ${g.takes.slice().sort((a,b)=>a.clip-b.clip||a.ts-b.ts).map(t=>takeRow(t,key)).join("")}
+    </div>`).join(""):`<div class="empty"><b>Nenhum take nesta diária</b>Registre o primeiro na aba Take. Cada toque em Registrar vira uma linha aqui e no ${esc(U().roll)}.txt.</div>`;
+  return `
+  <section class="blk">
+    <div class="blk-h"><span class="lbl">Diária</span></div>
+    <select id="in-viewday" data-bind="viewDay" aria-label="Escolher diária">${opts}</select>
+    <div class="row2"><span class="hint">${d.takes.length} ${d.takes.length===1?"take":"takes"}${S.cfg.producao?" · "+esc(S.cfg.producao):""}</span>
+      ${d.takes.length?`<button type="button" class="btn sm" style="margin-left:auto" data-act="exportCsv" data-k="${esc(key)}">Planilha da diária (.csv)</button>`:""}</div>
+    <p class="hint" style="margin:0">O <b>.txt</b> de cada rolo segue o formato que o Offload Report lê: salve em <code>RELATORIO_CAMERA/</code> na pasta de relatórios do projeto.</p>
+  </section>
+  ${backupNudge()}
+  ${body}`;
+}
+function takeRow(t,key){
+  const open=openTake===t.id;
+  const spec=[t.lens.replace(/^DZO /,""),tLabel(t.t),t.sh,t.fps+"fps",t.isoLabel+t.iso,t.wb+"K",...t.filters].join(" · ");
+  const delArmed=armed==="del:"+t.id;
+  return `<div class="take">
+    <button type="button" class="take-row" data-act="openTake" data-v="${esc(t.id)}" aria-expanded="${open}">
+      <span class="clip">C${pad3(t.clip)}</span><span class="sl">Cena ${esc(t.cena||"-")} · Pl ${esc(t.plano||"-")} · Tk ${esc(t.take)}</span>
+      ${t.aval?`<span class="pill ${esc(t.aval)}">${esc(t.aval)}</span>`:`<span class="pill">—</span>`}
+      <span class="spec">${esc(spec)}${t.obs?" · "+esc(t.obs):""}</span>
+    </button>
+    ${open?`<div class="take-detail">
+      <dl><dt>Câmera</dt><dd>${esc(t.cam)} · ${esc(t.codec)}</dd><dt>Lente</dt><dd>${esc(t.lens)}</dd>
+      <dt>Shutter</dt><dd>${esc(t.sh)} (${esc(t.shEq)})</dd><dt>Hora</dt><dd>${new Date(t.ts).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</dd></dl>
+      <div class="aval">${AVAL.map(a=>chip("takeAval",key,a,a,t.aval===a,"txt").replace('data-act="takeAval"',`data-act="takeAval" data-id="${esc(t.id)}"`)).join("")}</div>
+      <input type="text" id="in-tobs-${esc(t.id)}" data-bind="takeObs" data-id="${esc(t.id)}" data-k="${esc(key)}" value="${esc(t.obs)}" placeholder="Obs." autocomplete="off">
+      <div class="row2"><button type="button" class="btn sm danger ${delArmed?"armed":""}" data-act="takeDel" data-k="${esc(key)}" data-v="${esc(t.id)}">${delArmed?"Toque de novo para excluir":"Excluir take"}</button></div>
+    </div>`:""}
+  </div>`;
+}
+
+function viewKit(){
+  const meta=curDiariaMeta();
+  const camOpts=sel=>allCams().map(c=>`<option value="${esc(c.id)}" ${c.id===sel?"selected":""}>${esc(c.brand?c.brand+" ":"")}${esc(c.name)}</option>`).join("");
+  const units=S.cfg.unitOrder.map(k=>{
+    const u=S.cfg.units[k], C=cam(u.camId)||CAMERAS[0];
+    const rmArmed=armed==="rmUnit:"+k;
+    return `<div class="unitcard">
+      <div class="blk-h"><span class="u">CAM ${k}</span><span class="hint">${esc(C.sensor||"")}</span>
+        ${S.cfg.unitOrder.length>1?`<button type="button" class="btn sm danger ${rmArmed?"armed":""}" style="margin-left:auto" data-act="rmUnit" data-v="${k}">${rmArmed?"Confirmar remoção":"Remover"}</button>`:""}</div>
+      <div class="grid2">
+        <label>Modelo<select id="in-cam-${k}" data-bind="camId" data-u="${k}">${camOpts(u.camId)}</select></label>
+        <label>Codec<select id="in-codec-${k}" data-bind="codec" data-u="${k}">${C.codecs.map(x=>`<option ${x===u.codec?"selected":""}>${esc(x)}</option>`).join("")}</select></label>
+        <label>Rolo (cartão)<input type="text" class="mono" id="in-roll-${k}" data-bind="roll" data-u="${k}" value="${esc(u.roll)}" autocapitalize="characters"></label>
+        <label>Próximo clipe<input type="number" class="mono" inputmode="numeric" min="1" id="in-clip-${k}" data-bind="clip" data-u="${k}" value="${esc(u.clip)}"></label>
+      </div>
+      <button type="button" class="btn" data-act="newRoll" data-v="${k}">Trocar cartão → ${esc(nextRoll(u.roll))} (clipe volta a C001)</button>
+    </div>`;
+  }).join("");
+  const series={};
+  allLenses().forEach(l=>{const g=(l.brand||"")+"|"+l.series+"|"+(l.fmt||"");(series[g]=series[g]||[]).push(l)});
+  const lensGroups=Object.entries(series).map(([g,ls])=>{const [b,s,f]=g.split("|");return `<div class="series">
+    <div class="series-h"><b>${esc(b)} ${esc(s)}</b><span>${esc(f)}</span></div>
+    <div class="wrapchips">${ls.map(l=>chip("kitLens","",l.id,`${l.zoom?`${l.focalMin}–${l.focalMax}`:l.focal}<small>T${l.maxT}</small>`,S.cfg.kitLenses.includes(l.id))).join("")}</div></div>`}).join("");
+  const fg={}; allFilters().forEach(f=>{(fg[f.group]=fg[f.group]||[]).push(f)});
+  const filterGroups=Object.entries(fg).map(([g,fs])=>`<div class="series"><div class="series-h"><b>${esc(g)}</b></div>
+    <div class="wrapchips">${fs.map(f=>chip("kitFilter","",f.id,esc(f.label),S.cfg.kitFilters.includes(f.id),f.label.length>4?"txt":"")).join("")}</div></div>`).join("");
+  const ndArmed=armed==="newDay";
+  return `
+  ${installBlk()}
+  ${backupBlk()}
+  <section class="blk">
+    <div class="blk-h"><span class="lbl">Diária ${esc(meta.n)}</span><span class="val">${esc(brDate(meta.date))}</span></div>
+    <label class="mini" style="flex-direction:column;align-items:stretch">Produção<input type="text" id="in-prod" data-bind="producao" value="${esc(S.cfg.producao)}" placeholder="Nome do projeto (opcional)"></label>
+    <button type="button" class="btn ${ndArmed?"armed":""}" data-act="newDay">${ndArmed?"Toque de novo: começar Diária "+(maxDiaria()+1):"Começar nova diária"}</button>
+    <span class="hint">A diária atual fica guardada na aba Boletim. Rolos e clipes continuam de onde pararam.</span>
+  </section>
+
+  <section class="blk">
+    <div class="blk-h"><span class="lbl">Câmeras</span></div>
+    ${units}
+    ${S.cfg.unitOrder.length<6?`<button type="button" class="btn" data-act="addUnit">+ Adicionar câmera ${nextUnitLetter()}</button>`:""}
+  </section>
+
+  <section class="blk">
+    <div class="blk-h"><span class="lbl">Lentes no kit</span><span class="val">${S.cfg.kitLenses.length}</span></div>
+    <p class="note">Catálogo de exemplo (ARRI + DZOFilm). Confira T máximo e faixas antes de usar no set.</p>
+    ${lensGroups}
+    <details class="more"><summary>Cadastrar lente</summary>
+      <div class="form">
+        <label class="full">Marca e série<input type="text" id="nl-series" placeholder="ex.: Cooke S4/i"></label>
+        <label>Focal (mm)<input type="text" class="mono" id="nl-focal" placeholder="35 ou 24-70"></label>
+        <label>T máximo<input type="number" class="mono" inputmode="decimal" step="0.1" id="nl-t" placeholder="2"></label>
+        <button type="button" class="btn pri full" data-act="addLens">Adicionar ao kit</button>
+      </div></details>
+  </section>
+
+  <section class="blk">
+    <div class="blk-h"><span class="lbl">Filtros no kit</span><span class="val">${S.cfg.kitFilters.length}</span></div>
+    ${filterGroups}
+    <details class="more"><summary>Cadastrar filtro</summary>
+      <div class="form">
+        <label>Tipo<input type="text" id="nf-group" placeholder="ex.: Glimmerglass"></label>
+        <label>Valor<input type="text" id="nf-label" placeholder="ex.: 1/2"></label>
+        <label class="full">Sigla no boletim<input type="text" class="mono" id="nf-code" placeholder="ex.: GG1/2"></label>
+        <button type="button" class="btn pri full" data-act="addFilter">Adicionar ao kit</button>
+      </div></details>
+  </section>
+
+  <section class="blk">
+    <div class="blk-h"><span class="lbl">Outra câmera</span></div>
+    <details class="more"><summary>Cadastrar modelo de câmera</summary>
+      <div class="form">
+        <label class="full">Marca e modelo<input type="text" id="nc-name" placeholder="ex.: Sony FX6"></label>
+        <label class="full">ISOs disponíveis (separe por vírgula)<input type="text" class="mono" id="nc-iso" placeholder="800, 1600, 3200, 12800"></label>
+        <label>ISO base<input type="number" class="mono" inputmode="numeric" id="nc-base" placeholder="800"></label>
+        <label>Shutter padrão<select id="nc-sh"><option value="frac">Fração (1/50)</option><option value="deg">Graus (180°)</option></select></label>
+        <label>Nome do ganho<select id="nc-isol"><option>ISO</option><option>EI</option></select></label>
+        <label>ND interno (opcional)<input type="text" class="mono" id="nc-nd" placeholder="0.6, 1.2, 1.8"></label>
+        <label class="full">Codecs (opcional)<input type="text" id="nc-codecs" placeholder="XAVC S-I, ProRes RAW"></label>
+        <button type="button" class="btn pri full" data-act="addCam">Cadastrar câmera</button>
+      </div></details>
+    <span class="hint">Câmeras que mostram o obturador em fração (1/50) já abrem nesse modo. Dá para trocar a qualquer momento na aba Take.</span>
+  </section>`;
+}
+function installBlk(){
+  if(isStandalone()) return "";
+  const how=installEvt?`<button type="button" class="btn pri" data-act="install">Instalar app</button>`
+    :isIOS()?`<p class="hint" style="margin:0">No Safari: toque em <b>Compartilhar</b> → <b>Adicionar à Tela de Início</b>.</p>`
+    :`<p class="hint" style="margin:0">No Chrome: menu <b>⋮</b> → <b>Instalar app</b> (ou <b>Adicionar à tela inicial</b>).</p>`;
+  return `<section class="blk"><div class="blk-h"><span class="lbl">Instalar no celular</span></div>${how}<span class="hint">Instalado, o app abre em tela cheia e funciona sem internet.</span></section>`;
+}
+function backupBlk(){
+  const total=Object.values(S.days).reduce((a,d)=>a+d.takes.length,0);
+  const pr=pendingRestore?`<div class="unitcard"><b>Restaurar ${esc(pendingRestore.name)}?</b>
+      <span class="hint">${pendingRestore.takes} takes${pendingRestore.exportedAt?` · backup de ${esc(new Date(pendingRestore.exportedAt).toLocaleString("pt-BR"))}`:""}. Isso <b>substitui tudo</b> o que está neste aparelho (${total} takes).</span>
+      <div class="row2"><button type="button" class="btn armed" data-act="restoreApply">Substituir pelos dados do backup</button><button type="button" class="btn" data-act="restoreCancel">Cancelar</button></div></div>`:"";
+  return `<section class="blk"><div class="blk-h"><span class="lbl">Backup</span><span class="val">${S.cfg.lastBackup?esc(ago(S.cfg.lastBackup)):"nunca"}</span></div>
+    <span class="hint">Os dados ficam só neste aparelho. O backup gera um arquivo com tudo (kit, diárias e takes): mande para o Drive, iCloud ou WhatsApp.</span>
+    <div class="row2"><button type="button" class="btn pri" data-act="backup">Fazer backup</button><button type="button" class="btn" data-act="restorePick">Restaurar backup</button></div>
+    ${pr}</section>`;
+}
+function backupNudge(){
+  if(!needsBackup()) return "";
+  return `<div class="note row2" style="border-left-color:var(--accent)"><span>Há takes sem backup${S.cfg.lastBackup?` (último ${esc(ago(S.cfg.lastBackup))})`:""}.</span><button type="button" class="btn sm pri" style="margin-left:auto" data-act="backup">Fazer backup</button></div>`;
+}
+function nextRoll(r){const m=String(r).match(/^(.*?)(\d+)$/);return m?m[1]+String(Number(m[2])+1).padStart(m[2].length,"0"):r+"2"}
+function nextUnitLetter(){return "ABCDEFGH".split("").find(l=>!S.cfg.unitOrder.includes(l))}
+const maxDiaria=()=>Math.max(...S.cfg.diarias.map(d=>Number(d.n)||0));
+
+/* ===================== Ações ===================== */
+let toastTimer=null;
+function toast(msg,undo,label,act,ms){
+  $("#toastMsg").textContent=msg; const b=$("#toastUndo");
+  b.hidden=!undo; b.textContent=label||"Desfazer"; b.dataset.act=act||"undo"; $("#toast").hidden=false;
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>{$("#toast").hidden=true;lastUndo=null},ms||(undo?6000:2500));
+}
+function arm(k){armed=k;setTimeout(()=>{if(armed===k){armed=null;render()}},4000)}
+function setCur(f,v){
+  const u=U(), c=u.cur, C=cam(u.camId);
+  if(f==="lensId"){c.lensId=v;const L=lens(v);if(L){if(c.t<L.maxT)c.t=L.maxT;c.focal=L.zoom?(c.focal&&c.focal>=L.focalMin&&c.focal<=L.focalMax?c.focal:L.focalMin):null}}
+  else if(["t","shDeg","shFrac","fps","iso","wb","focal"].includes(f)) c[f]=Number(v);
+}
+async function offerFile(name,text){
+  const type=name.endsWith(".csv")?"text/csv":name.endsWith(".json")?"application/json":"text/plain";
+  const blob=new Blob([text],{type});
+  let touch=false; try{touch=matchMedia("(pointer:coarse)").matches}catch(e){}
+  if(touch&&navigator.canShare&&typeof File==="function"){
+    try{
+      const file=new File([blob],name,{type});
+      if(navigator.canShare({files:[file]})){await navigator.share({files:[file],title:name});return "shared"}
+    }catch(e){if(e&&e.name==="AbortError")return "cancel"}
+  }
+  try{
+    const url=URL.createObjectURL(blob), a=document.createElement("a");
+    a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),5000); toast(`${name} salvo em Downloads`); return "saved";
+  }catch(e){
+    $("#modalTitle").textContent=name; $("#modalText").value=text.replace(/^﻿/,""); $("#modal").hidden=false; return "shown";
+  }
+}
+
+document.addEventListener("click",async e=>{
+  const el=e.target.closest("[data-act]"); if(!el) return;
+  const act=el.dataset.act, v=el.dataset.v, u=U();
+  switch(act){
+    case "tab": view=v; openTake=null; render(); window.scrollTo(0,0); return;
+    case "unit": S.cfg.active=v; commit(); render(); return;
+    case "set": setCur(el.dataset.f,v); commit(); render(); return;
+    case "shMode": u.cur.shMode=v; commit(); render(); return;
+    case "ndInt": u.cur.ndInt=v===""?null:Number(v); commit(); render(); return;
+    case "filter": {const i=u.cur.filters.indexOf(v); i<0?u.cur.filters.push(v):u.cur.filters.splice(i,1); commit(); render(); return}
+    case "aval": u.cur.aval=u.cur.aval===v?"":v; commit(); render(); return;
+    case "takeStep": u.slate.take=Math.max(1,(parseInt(u.slate.take,10)||1)+Number(v)); commit(); render(); return;
+    case "register": {
+      document.activeElement&&document.activeElement.blur&&document.activeElement.blur();
+      const t=snapshot(S.cfg.active), key=S.cfg.diariaKey;
+      day().takes.push(t);
+      lastUndo={unit:S.cfg.active,id:t.id,key,clip:u.clip,take:u.slate.take,aval:u.cur.aval,obs:u.cur.obs};
+      u.clip+=1; u.slate.take=(parseInt(u.slate.take,10)||1)+1; u.cur.aval=""; u.cur.obs="";
+      commit(key); render(); toast(`${t.roll}C${pad3(t.clip)} registrado`,true);
+      if(navigator.vibrate) try{navigator.vibrate(15)}catch(_){}
+      return;
+    }
+    case "undo": {
+      if(!lastUndo) return; const L=lastUndo, d=S.days[L.key], uu=S.cfg.units[L.unit];
+      if(d) d.takes=d.takes.filter(t=>t.id!==L.id);
+      if(uu){uu.clip=L.clip;uu.slate.take=L.take;uu.cur.aval=L.aval;uu.cur.obs=L.obs}
+      lastUndo=null; commit(L.key); render(); toast("Take desfeito"); return;
+    }
+    case "openTake": openTake=openTake===v?null:v; armed=null; render(); return;
+    case "takeAval": {const d=S.days[el.dataset.f]; const t=d&&d.takes.find(x=>x.id===el.dataset.id); if(t){t.aval=t.aval===v?"":v; commit(d.key); render()} return}
+    case "takeDel": {
+      if(armed!=="del:"+v){arm("del:"+v);render();return}
+      const d=S.days[el.dataset.k]; if(d){d.takes=d.takes.filter(t=>t.id!==v); armed=null; openTake=null; commit(d.key); render(); toast("Take excluído")} return;
+    }
+    case "exportTxt": {
+      const d=S.days[el.dataset.k]; const [un,roll]=v.split("|");
+      const takes=d.takes.filter(t=>t.unit===un&&t.roll===roll); offerFile(`${roll}.txt`,rollTxt(roll,takes)); return;
+    }
+    case "exportCsv": {
+      const d=S.days[el.dataset.k]; const meta=S.cfg.diarias.find(x=>x.key===el.dataset.k)||{n:"",date:""};
+      offerFile(`boletim_diaria${meta.n}_${meta.date}.csv`,dayCsv(d,meta)); return;
+    }
+    case "closeModal": $("#modal").hidden=true; return;
+    case "copyModal": {
+      const ta=$("#modalText");
+      try{await navigator.clipboard.writeText(ta.value);toast("Texto copiado")}catch(_){ta.focus();ta.select();toast("Texto selecionado: copie com o menu")}
+      return;
+    }
+    case "backup": {
+      const r=await offerFile(`backup-boletim_${today()}.json`,backupData());
+      if(r!=="cancel"){S.cfg.lastBackup=Date.now();commit();render()}
+      return;
+    }
+    case "restorePick": $("#restoreFile").value=""; $("#restoreFile").click(); return;
+    case "restoreApply": {
+      if(!pendingRestore) return;
+      S=pendingRestore.data; pendingRestore=null; viewDay=null; openTake=null; armed=null;
+      saveLocal(); render(); toast("Backup restaurado"); return;
+    }
+    case "restoreCancel": pendingRestore=null; render(); return;
+    case "reload": location.reload(); return;
+    case "install": if(installEvt){installEvt.prompt();try{await installEvt.userChoice}catch(_){}installEvt=null;render()} return;
+    case "kitLens": {const a=S.cfg.kitLenses,i=a.indexOf(v); i<0?a.push(v):a.splice(i,1); commit(); render(); return}
+    case "kitFilter": {const a=S.cfg.kitFilters,i=a.indexOf(v); i<0?a.push(v):a.splice(i,1); commit(); render(); return}
+    case "addUnit": {const l=nextUnitLetter(); if(!l) return; S.cfg.units[l]=newUnit(l,u.camId); S.cfg.unitOrder.push(l); commit(); render(); toast(`Câmera ${l} adicionada`); return}
+    case "rmUnit": {
+      if(armed!=="rmUnit:"+v){arm("rmUnit:"+v);render();return}
+      delete S.cfg.units[v]; S.cfg.unitOrder=S.cfg.unitOrder.filter(x=>x!==v); if(S.cfg.active===v)S.cfg.active=S.cfg.unitOrder[0];
+      armed=null; commit(); render(); return;
+    }
+    case "newRoll": {const uu=S.cfg.units[v]; uu.roll=nextRoll(uu.roll); uu.clip=1; commit(); render(); toast(`Cartão ${uu.roll} na CAM ${v}`); return}
+    case "newDay": {
+      if(armed!=="newDay"){arm("newDay");render();return}
+      const n=maxDiaria()+1, key=`d${n}-${today()}`;
+      S.cfg.diarias.push({key,n,date:today()}); S.days[key]={key,updatedAt:Date.now(),takes:[]}; S.cfg.diariaKey=key; viewDay=key;
+      armed=null; commit(key); render(); toast(`Diária ${n} começou`); return;
+    }
+    case "addLens": {
+      const series=$("#nl-series").value.trim(), fs=$("#nl-focal").value.trim(), t=parseFloat(String($("#nl-t").value).replace(",","."));
+      const m=fs.match(/^(\d+)\s*[-–]\s*(\d+)$/), f=parseInt(fs,10);
+      if(!series||!(m||f)||!(t>0)){toast("Preencha série, focal e T máximo");return}
+      const base={id:"c-"+newId(),brand:"",short:"",series,seriesShort:series,fmt:"",maxT:t};
+      const L=m?{...base,zoom:true,focalMin:+m[1],focalMax:+m[2]}:{...base,zoom:false,focal:f,tag:""};
+      S.cfg.custom.lenses.push(L); S.cfg.kitLenses.push(L.id); commit(); render(); toast(`${lensLabel(L)} no kit`); return;
+    }
+    case "addFilter": {
+      const g=$("#nf-group").value.trim(), l=$("#nf-label").value.trim(); let c=$("#nf-code").value.trim().replace(/\s+/g,"");
+      if(!g&&!l){toast("Preencha o tipo do filtro");return}
+      if(!c) c=(g+l).replace(/\s+/g,"");
+      const F={id:"c-"+newId(),group:g||"Outros",label:l||g,code:c}; S.cfg.custom.filters.push(F); S.cfg.kitFilters.push(F.id); commit(); render(); toast(`${F.code} no kit`); return;
+    }
+    case "addCam": {
+      const name=$("#nc-name").value.trim();
+      const list=s=>String(s).split(/[,;\s]+/).map(x=>parseFloat(x.replace(",","."))).filter(x=>x>0);
+      const iso=[...new Set(list($("#nc-iso").value))].sort((a,b)=>a-b);
+      if(!name||!iso.length){toast("Preencha modelo e ISOs");return}
+      let base=parseInt($("#nc-base").value,10); if(!iso.includes(base)) base=iso[0];
+      const codecs=$("#nc-codecs").value.split(",").map(x=>x.trim()).filter(Boolean);
+      const C={id:"c-"+newId(),brand:"",name,sensor:"",ei:iso,base,nd:list($("#nc-nd").value),sh:$("#nc-sh").value,isoLabel:$("#nc-isol").value,codecs:codecs.length?codecs:["—"]};
+      S.cfg.custom.cameras.push(C); commit(); render(); toast(`${name} cadastrada. Escolha no modelo da câmera.`); return;
+    }
+  }
+});
+
+function onBind(el,final){
+  const b=el.dataset.bind, v=el.value, u=U();
+  switch(b){
+    case "cena": u.slate.cena=v; updatePreview(); if(final)commit(); return;
+    case "plano": u.slate.plano=v; updatePreview(); if(final)commit(); return;
+    case "obs": u.cur.obs=v; updatePreview(); if(final)commit(); return;
+    case "producao": S.cfg.producao=v; if(final)commit(); return;
+    case "takeObs": if(!final) return; {const d=S.days[el.dataset.k]; const t=d&&d.takes.find(x=>x.id===el.dataset.id); if(t){t.obs=v.trim();commit(d.key)}} return;
+    case "viewDay": if(final){viewDay=v;openTake=null;render()} return;
+    case "roll": if(final){const uu=S.cfg.units[el.dataset.u]; uu.roll=v.trim().toUpperCase()||uu.roll; commit(); render()} return;
+    case "clip": if(final){const uu=S.cfg.units[el.dataset.u]; uu.clip=Math.max(1,parseInt(v,10)||1); commit(); render()} return;
+    case "codec": if(final){S.cfg.units[el.dataset.u].codec=v; commit()} return;
+    case "camId": if(final){
+      const uu=S.cfg.units[el.dataset.u], C=cam(v); if(!C) return; uu.camId=v;
+      if(!C.ei.includes(uu.cur.iso)) uu.cur.iso=C.base;
+      uu.cur.shMode=C.sh; if(!C.nd.includes(uu.cur.ndInt)) uu.cur.ndInt=null;
+      if(!C.codecs.includes(uu.codec)) uu.codec=C.codecs[0];
+      commit(); render();} return;
+    case "focal": case "wb": case "shDeg": case "shFrac": if(final){
+      const n=parseFloat(String(v).replace(",",".")); if(!(n>0)) return;
+      if(b==="focal"){const L=lens(u.cur.lensId); if(!L||!L.zoom||n<L.focalMin||n>L.focalMax){toast("Fora da faixa da zoom");return}}
+      u.cur[b]=b==="shDeg"?n:Math.round(n); commit(); render();} return;
+  }
+}
+document.addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.bind)onBind(e.target,false)});
+document.addEventListener("change",e=>{if(e.target.dataset&&e.target.dataset.bind)onBind(e.target,true)});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches("input[data-bind]")){e.target.blur()}});
+
+/* ===================== Início ===================== */
+$("#restoreFile").addEventListener("change",async e=>{
+  const f=e.target.files&&e.target.files[0]; if(!f) return;
+  try{
+    const p=parseBackup(await f.text());
+    const n=Object.values(p.data.days).reduce((a,d)=>a+((d&&d.takes)||[]).length,0);
+    pendingRestore={data:p.data,exportedAt:p.exportedAt,takes:n,name:f.name}; view="kit"; render(); window.scrollTo(0,0);
+  }catch(err){toast("Esse arquivo não é um backup do Boletim de Câmera")}
+});
+
+S=loadLocal()||fresh();
+render();
+askPersist();
+if("serviceWorker" in navigator&&location.protocol!=="file:"){
+  const hadController=!!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register("sw.js").then(reg=>{
+    reg.addEventListener("updatefound",()=>{
+      const w=reg.installing; if(!w) return;
+      w.addEventListener("statechange",()=>{if(w.state==="activated"&&hadController)toast("Nova versão do app pronta",true,"Atualizar","reload",20000)});
+    });
+  }).catch(()=>{});
+}
+</script>
+</body>
+</html>
