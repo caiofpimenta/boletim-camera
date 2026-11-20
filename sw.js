@@ -1,7 +1,7 @@
 /* Service worker do Boletim de Câmera.
    Guarda o app no celular para abrir sem internet.
    Ao publicar uma versão nova, aumente o número em VERSAO: é isso que faz os celulares baixarem a atualização. */
-const VERSAO = "v2";
+const VERSAO = "v3";
 const APP = "boletim-app-" + VERSAO;
 const FONTES = "boletim-fontes";
 const ARQUIVOS = [

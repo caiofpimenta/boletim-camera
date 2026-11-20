@@ -291,25 +291,153 @@ input.mono{font-family:var(--f-mono);font-weight:600}
 <input type="file" id="restoreFile" accept=".json,application/json" hidden>
 
 <script>
-/* ===================== Catálogo de câmeras (ARRI). Tudo editável depois de cadastrado. ===================== */
-const EI_ARRI=[160,200,250,320,400,500,640,800,1000,1280,1600,2000,2560,3200];
-const EI_A35=[...EI_ARRI,4000,5120,6400];
+/* ===================== Catálogo de câmeras: ARRI, RED, Sony (cinema 2010+) e Canon (Cinema EOS 2010+). Tudo editável pelo usuário. ===================== */
+const ISO_STD=[25,32,40,50,64,80,100,125,160,200,250,320,400,500,640,800,1000,1250,1600,2000,2500,3200,4000,5000,6400,8000,10000,12800,16000,20000,25600,32000,40000,51200,64000,80000,102400];
+const ISO_ARRI=[160,200,250,320,400,500,640,800,1000,1280,1600,2000,2560,3200,4000,5120,6400];
+const NDV=[0.6,0.9,1.2,1.5,1.8,2.1];
+const ND3=[0.6,1.2,1.8], ND5=[0.6,1.2,1.8,2.4,3.0], NDVEN=[0.3,0.6,0.9,1.2,1.5,1.8,2.1,2.4];
+function isoSeries(brand,min,max,bases){const s=(brand==="ARRI"?ISO_ARRI:ISO_STD).filter(x=>x>=min&&x<=max);return [...new Set([...s,...bases])].sort((a,b)=>a-b)}
+function M(brand,name,year,sensor,iso,bases,nd,sh,codecs,formats){
+  const id=(brand+"-"+name).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+  return {catalogId:id,brand,name,year,sensor,isoLabel:brand==="ARRI"?"EI":"ISO",ei:isoSeries(brand,iso[0],iso[1],bases),bases,nd,sh,codecs,formats};
+}
+/* ARRI */
 const PR_HI=["ProRes 4444 XQ","ProRes 4444","ProRes 422 HQ"];
-const F_A35=["4.6K 3:2 Open Gate (4608×3164)","4.6K 16:9 (4608×2592)","4.6K 16:9 → 4K (4096×2304)","4K 16:9 (4096×2304)","4K 16:9 → UHD (3840×2160)","4K 16:9 → 2K (2048×1152)","4K 16:9 → HD (1920×1080)","4K 2:1 (4096×2048)","3.8K 16:9 UHD (3840×2160)","3.3K 6:5 (3328×2790)","3.3K 6:5 Ana. 2x → 3.8K 2.39:1 (3840×1608)","3K 1:1 (3072×3072)","3K 1:1 Ana. 2x → 3.8K 2:1 (3840×1920)","2.7K 8:9 Ana. 2x → UHD (3840×2160)","2K 16:9 S16 (2048×1152)"];
-const F_MLF=["4.5K LF Open Gate (4448×3096)","4.5K LF 2.39:1 (4448×1856)","4.3K LF 16:9 → UHD (3840×2160)","3.8K LF 16:9 UHD (3840×2160)","3.8K LF 16:9 → 2K (2048×1152)","3.8K LF 16:9 → HD (1920×1080)","2.8K LF 1:1","3.4K S35 3:2 (3424×2202)","3.2K S35 16:9 (3200×1800)","2.8K S35 4:3 (2880×2160)"];
+const C_ACL=["ProRes 4444","ProRes 422 HQ","ProRes 422","ProRes 422 LT","ProRes 422 Proxy","DNxHD","ARRIRAW (gravador externo)"];
+const F_ACL=["HD 16:9 (1920×1080)","2K 16:9 (2048×1152)","ARRIRAW 16:9 2.8K (2880×1620)"];
+const F_ACL43=[...F_ACL,"4:3 2.8K (2880×2160)"];
+const C_XT=["ARRIRAW",...PR_HI,"ProRes 422","ProRes 422 LT","ProRes 422 Proxy","DNxHD"];
+const F_XT=["Open Gate 3.4K (3414×2198)","4:3 2.8K (2880×2160)","16:9 2.8K (2880×1620)","6:5 2.6K Ana. (2578×2160)","2K 16:9 (2048×1152)","HD 16:9 (1920×1080)"];
+const C_SXT=["ARRIRAW",...PR_HI,"ProRes 422","ProRes 422 LT"];
+const F_SXT=["Open Gate 3.4K (3424×2202)","4:3 2.8K (2880×2160)","16:9 2.8K (2880×1620)","6:5 2.6K Ana.","16:9 3.2K (3200×1800)","4K UHD (3840×2160)","2K 16:9 (2048×1152)","HD 16:9 (1920×1080)"];
+const F_AMIRA=["ARRIRAW 2.8K 16:9 (2880×1620)","4K UHD (3840×2160)","3.2K (3200×1800)","2K (2048×1152)","HD (1920×1080)","S16 HD (1920×1080)"];
+const F_MINI=["3.4K Open Gate (3424×2202)","2.8K 16:9 (2880×1620)","2.8K 4:3 (2880×2160)","3.2K 16:9 (3200×1800)","4K UHD (3840×2160)","2K 16:9 (2048×1152)","HD 16:9 (1920×1080)","HD 16:9 Ana. 2x","S16 HD (1920×1080)"];
+const F_65=["6.5K Open Gate (6560×3100)","5.1K (5120×3100)","4.5K LF Open Gate (4448×3096)"];
 const F_LF=["4.5K LF Open Gate (4448×3096)","4.5K LF 2.39:1 (4448×1856)","3.8K LF 16:9 UHD (3840×2160)","3.8K LF 16:9 → 2K (2048×1152)","3.8K LF 16:9 → HD (1920×1080)"];
-const F_MINI=["3.4K Open Gate (3424×2202)","2.8K 16:9 (2880×1620)","2.8K 4:3 (2880×2160)","3.2K 16:9 (3200×1800)","4K UHD 16:9 (3840×2160)","2K 16:9 (2048×1152)","HD 16:9 (1920×1080)","HD 16:9 Ana. 2x","S16 HD (1920×1080)"];
-const F_AMIRA=["2.8K 16:9 (2880×1620)","4K UHD (3840×2160)","3.2K (3200×1800)","2K (2048×1152)","HD (1920×1080)","S16 HD (1920×1080)"];
-const F_A65=["6.5K Open Gate (6560×3100)","5.1K 16:9 (5120×2880)"];
+const F_MLF=["4.5K LF Open Gate (4448×3096)","4.5K LF 2.39:1 (4448×1856)","4.3K LF 16:9 → UHD (3840×2160)","3.8K LF 16:9 UHD (3840×2160)","3.8K LF 16:9 → 2K (2048×1152)","3.8K LF 16:9 → HD (1920×1080)","2.8K LF 1:1","3.4K S35 3:2 (3424×2202)","3.2K S35 16:9 (3200×1800)","2.8K S35 4:3 (2880×2160)"];
+const F_A35=["4.6K 3:2 Open Gate (4608×3164)","4.6K 16:9 (4608×2592)","4.6K 16:9 → 4K (4096×2304)","4K 16:9 (4096×2304)","4K 16:9 → UHD (3840×2160)","4K 16:9 → 2K (2048×1152)","4K 16:9 → HD (1920×1080)","4K 2:1 (4096×2048)","3.8K 16:9 UHD (3840×2160)","3.3K 6:5 (3328×2790)","3.3K 6:5 Ana. 2x → 3.8K 2.39:1 (3840×1608)","3K 1:1 (3072×3072)","3K 1:1 Ana. 2x → 3.8K 2:1 (3840×1920)","2.7K 8:9 Ana. 2x → UHD (3840×2160)","2K 16:9 S16 (2048×1152)"];
+const A3=[160,3200], A4=[160,6400];
+/* RED */
+const R_ISO=[250,12800];
+const C_R1=["REDCODE 28","REDCODE 36","REDCODE 42"];
+const F_R1=["4.5K 2:1 (4480×1920)","4K 16:9 (4096×2304)","4K 2:1 (4096×2048)","3K","2K"];
+const F_MX5K=["5K FF (5120×2700)","5K 2:1 (5120×2560)","5K WS (5120×2133)","4.5K WS (4520×1920)","4K (4096×2160)","4K HD (3840×2160)","3K (3072×1620)","2K (2048×1080)"];
+const F_SCX=["4K (4096×2160)","4K HD (3840×2160)","3K (3072×1620)","2K (2048×1080)"];
+const F_DR6K=["6K FF (6144×3160)","6K 2:1 (6144×3072)","6K 2.4:1 (6144×2592)","5K FF (5120×2700)","4.5K WS (4608×1920)","4K (4096×2160)","4K UHD (3840×2160)","3K","2K"];
+const F_DR5K=["5K FF (5120×2700)","5K 2:1 (5120×2560)","5K 2.4:1 (5120×2160)","4.5K WS (4608×1920)","4K (4096×2160)","4K UHD (3840×2160)","3K","2K"];
+const F_GEM=["5K FF (5120×3000)","5K 17:9 (5120×2700)","5K 2.4:1 (5120×2160)","4K (4096×2160)","4K UHD (3840×2160)","3K","2K"];
+const F_R8K=["8K FF (8192×4320)","8K 2:1 (8192×4096)","8K 2.4:1 (8192×3456)","8K 16:9 (7680×4320)","7K FF (7168×3780)","6K FF (6144×3240)","5K FF (5120×2700)","4K FF (4096×2160)","4K UHD (3840×2160)","3K","2K","8K 6:5 Ana."];
+const F_RAV=["4.5K FF (4608×2160)","4.5K 2.4:1 (4608×1920)","4K (4096×2160)","4K UHD (3840×2160)","3K","2K"];
+const C_DSMC2=["REDCODE RAW","ProRes 4444 XQ","ProRes 4444","ProRes 422 HQ","ProRes 422","ProRes 422 LT","DNxHR 444","DNxHR HQX","DNxHR HQ","DNxHR SQ","DNxHR LB"];
+const F_KOM=["6K 17:9 (6144×3240)","6K 2.4:1 (6144×2592)","6K 16:9 (5760×3240)","5K 17:9 (5120×2700)","4K 17:9 (4096×2160)","4K UHD (3840×2160)","2K 17:9 (2048×1080)","6K 6:5 Ana."];
+const C_KOM=["REDCODE RAW HQ","REDCODE RAW MQ","REDCODE RAW LQ","ProRes 422 HQ","ProRes 422"];
+const C_R3=["REDCODE RAW HQ","REDCODE RAW MQ","REDCODE RAW LQ","REDCODE RAW ELQ","ProRes 4444 XQ","ProRes 4444","ProRes 422 HQ","ProRes 422","ProRes 422 LT"];
+const F_VR=["8K 17:9 (8192×4320)","8K 2.4:1 (8192×3456)","8K 16:9 (7680×4320)","7K 17:9 (7168×3780)","6K 17:9 (6144×3240)","6K 2.4:1 (6144×2592)","5K 17:9 (5120×2700)","4K 17:9 (4096×2160)","4K UHD (3840×2160)","2K 17:9 (2048×1080)","8K 6:5 Ana."];
+/* Sony */
+const F_SDCI=["4K (4096×2160)","QFHD (3840×2160)","2K (2048×1080)","HD (1920×1080)"];
+const C_F55=["XAVC-I","XAVC-L","MPEG-2 HD 422","SStP SR-SQ","SStP SR-Lite","ProRes 422 HQ","ProRes 422","RAW (AXS-R5/R7)","X-OCN (AXS-R7)"];
+const C_FS7=["XAVC-I","XAVC-L","MPEG-2 HD 422","ProRes 422 HQ (XDCA-FS7)","ProRes 422 (XDCA-FS7)","RAW por saída (XDCA-FS7)"];
+const C_VEN=["X-OCN XT (AXS-R7)","X-OCN ST (AXS-R7)","X-OCN LT (AXS-R7)","RAW (AXS-R7)","XAVC-I Class 480","XAVC-I Class 300","XAVC-L","ProRes 4444","ProRes 422 HQ","ProRes 422"];
+const F_VEN=["6K 3:2","6K 17:9","6K 1.85:1","6K 2.39:1","5.7K 16:9","4K 6:5 Ana.","4K 4:3 Ana.","4K 17:9 S35","4K 2.39:1","3.8K 16:9 UHD"];
+const C_VEN2=["X-OCN XT","X-OCN ST","X-OCN LT","XAVC-I","ProRes 4444","ProRes 422 HQ"];
+const F_VEN2_8K=["8.6K 3:2","8.6K 17:9","8.2K 17:9 (8192×4320)","8.2K 2.39:1","7.6K 16:9 (7680×4320)","5.8K 6:5 S35","5.8K 4:3 S35","5.8K 17:9 S35","4K 17:9 (4096×2160)","UHD (3840×2160)"];
+const C_XS=["XAVC S-I","XAVC S","XAVC HS"];
+/* Canon */
+const F_C4K=["4K DCI (4096×2160)","UHD (3840×2160)","2K (2048×1080)","HD (1920×1080)"];
+const C_CRL6=["Cinema RAW Light LT","Cinema RAW Light ST","Cinema RAW Light HQ","XF-AVC","XF-AVC S","XF-HEVC S"];
+const C_ISO=[100,102400];
+
 const CATALOG=[
-  {catalogId:"arri-alexa-35-xtreme",brand:"ARRI",name:"ALEXA 35 Xtreme",isoLabel:"EI",ei:EI_A35,base:800,nd:[0.6,1.2,1.8],sh:"deg",codecs:["ARRIRAW","ARRICORE",...PR_HI],formats:F_A35},
-  {catalogId:"arri-alexa-35",brand:"ARRI",name:"ALEXA 35",isoLabel:"EI",ei:EI_A35,base:800,nd:[0.6,1.2,1.8],sh:"deg",codecs:["ARRIRAW","ARRICORE",...PR_HI],formats:F_A35},
-  {catalogId:"arri-alexa-mini-lf",brand:"ARRI",name:"ALEXA Mini LF",isoLabel:"EI",ei:EI_ARRI,base:800,nd:[0.6,1.2,1.8],sh:"deg",codecs:["ARRIRAW",...PR_HI],formats:F_MLF},
-  {catalogId:"arri-alexa-lf",brand:"ARRI",name:"ALEXA LF",isoLabel:"EI",ei:EI_ARRI,base:800,nd:[0.6,1.2,1.8],sh:"deg",codecs:["ARRIRAW",...PR_HI],formats:F_LF},
-  {catalogId:"arri-alexa-mini",brand:"ARRI",name:"ALEXA Mini",isoLabel:"EI",ei:EI_ARRI,base:800,nd:[0.6,1.2,2.1],sh:"deg",codecs:["ARRIRAW",...PR_HI,"ProRes 422","ProRes 422 LT"],formats:F_MINI},
-  {catalogId:"arri-amira",brand:"ARRI",name:"AMIRA",isoLabel:"EI",ei:EI_ARRI,base:800,nd:[0.6,1.2,2.1],sh:"deg",codecs:["ARRIRAW",...PR_HI,"ProRes 422","ProRes 422 LT","MPEG-2 HD 422"],formats:F_AMIRA},
-  {catalogId:"arri-alexa-65",brand:"ARRI",name:"ALEXA 65",isoLabel:"EI",ei:EI_ARRI,base:800,nd:[],sh:"deg",codecs:["ARRIRAW"],formats:F_A65},
+  M("ARRI","ALEXA (Classic / EV)",2010,"S35 ALEV III",A3,[800],[],"deg",C_ACL,F_ACL),
+  M("ARRI","ALEXA Plus",2011,"S35 ALEV III",A3,[800],[],"deg",C_ACL,F_ACL),
+  M("ARRI","ALEXA Plus 4:3",2012,"S35 ALEV III",A3,[800],[],"deg",C_ACL,F_ACL43),
+  M("ARRI","ALEXA Studio",2011,"S35 ALEV III",A3,[800],[],"deg",C_ACL,F_ACL43),
+  M("ARRI","ALEXA M",2012,"S35 ALEV III",A3,[800],[],"deg",C_ACL,F_ACL43),
+  M("ARRI","ALEXA XT",2013,"S35 ALEV III",A3,[800],[],"deg",C_XT,F_XT),
+  M("ARRI","ALEXA XT Plus",2013,"S35 ALEV III",A3,[800],[],"deg",C_XT,F_XT),
+  M("ARRI","ALEXA XT M",2013,"S35 ALEV III",A3,[800],[],"deg",C_XT,F_XT),
+  M("ARRI","ALEXA XT Studio",2013,"S35 ALEV III",A3,[800],[],"deg",C_XT,F_XT),
+  M("ARRI","AMIRA",2014,"S35 ALEV III",A3,[800],[0.6,1.2,2.1],"deg",["ARRIRAW",...PR_HI,"ProRes 422","ProRes 422 LT","MPEG-2 HD 422"],F_AMIRA),
+  M("ARRI","ALEXA 65",2014,"65 mm A3X",A3,[800],[],"deg",["ARRIRAW"],F_65),
+  M("ARRI","ALEXA Mini",2015,"S35 ALEV III",A3,[800],[0.6,1.2,2.1],"deg",["ARRIRAW",...PR_HI,"ProRes 422","ProRes 422 LT"],F_MINI),
+  M("ARRI","ALEXA SXT EV",2016,"S35 ALEV III",A3,[800],[],"deg",C_SXT,F_SXT),
+  M("ARRI","ALEXA SXT Plus",2016,"S35 ALEV III",A3,[800],[],"deg",C_SXT,F_SXT),
+  M("ARRI","ALEXA SXT Studio",2016,"S35 ALEV III",A3,[800],[],"deg",C_SXT,F_SXT),
+  M("ARRI","ALEXA SXT W",2017,"S35 ALEV III",A3,[800],[],"deg",C_SXT,F_SXT),
+  M("ARRI","ALEXA LF",2018,"LF ALEV III",A3,[800],ND3,"deg",["ARRIRAW",...PR_HI],F_LF),
+  M("ARRI","ALEXA Mini LF",2019,"LF ALEV III",A3,[800],ND3,"deg",["ARRIRAW",...PR_HI],F_MLF),
+  M("ARRI","ALEXA 35",2022,"S35 ALEV 4",A4,[800],ND3,"deg",["ARRIRAW","ARRICORE",...PR_HI],F_A35),
+  M("ARRI","ALEXA 265",2024,"65 mm A3X",A4,[800],[],"deg",["ARRIRAW"],F_65),
+  M("ARRI","ALEXA 35 Xtreme",2025,"S35 ALEV 4",A4,[800],ND3,"deg",["ARRIRAW","ARRICORE",...PR_HI],F_A35),
+
+  M("RED","RED ONE MX",2010,"Mysterium-X",[250,2000],[800],[],"deg",C_R1,F_R1),
+  M("RED","EPIC-M",2011,"Mysterium-X 5K",R_ISO,[800],[],"deg",["REDCODE RAW"],F_MX5K),
+  M("RED","EPIC-X",2011,"Mysterium-X 5K",R_ISO,[800],[],"deg",["REDCODE RAW"],F_MX5K),
+  M("RED","SCARLET-X",2012,"Mysterium-X 5K",R_ISO,[800],[],"deg",["REDCODE RAW"],F_SCX),
+  M("RED","EPIC DRAGON",2013,"Dragon 6K",R_ISO,[800],[],"deg",["REDCODE RAW"],F_DR6K),
+  M("RED","SCARLET DRAGON",2014,"Dragon 6K",R_ISO,[800],[],"deg",["REDCODE RAW"],F_DR5K),
+  M("RED","WEAPON DRAGON 6K",2015,"Dragon 6K",R_ISO,[800],[],"deg",C_DSMC2,F_DR6K),
+  M("RED","EPIC-W 8K S35",2016,"Helium 8K S35",R_ISO,[800],[],"deg",C_DSMC2,F_R8K),
+  M("RED","SCARLET-W 5K",2016,"Dragon 5K",R_ISO,[800],[],"deg",C_DSMC2,F_DR5K),
+  M("RED","RAVEN 4.5K",2016,"Dragon 4.5K",R_ISO,[800],[],"deg",C_DSMC2,F_RAV),
+  M("RED","WEAPON 8K S35",2016,"Helium 8K S35",R_ISO,[800],[],"deg",C_DSMC2,F_R8K),
+  M("RED","WEAPON MONSTRO 8K VV",2017,"Monstro 8K VV",R_ISO,[800],[],"deg",C_DSMC2,F_R8K),
+  M("RED","DSMC2 MONSTRO 8K VV",2018,"Monstro 8K VV",R_ISO,[800],[],"deg",C_DSMC2,F_R8K),
+  M("RED","DSMC2 HELIUM 8K S35",2018,"Helium 8K S35",R_ISO,[800],[],"deg",C_DSMC2,F_R8K),
+  M("RED","DSMC2 GEMINI 5K S35",2018,"Gemini 5K S35",R_ISO,[800,3200],[],"deg",C_DSMC2,F_GEM),
+  M("RED","DSMC2 DRAGON-X 5K S35",2018,"Dragon-X 5K S35",R_ISO,[800],[],"deg",C_DSMC2,F_DR5K),
+  M("RED","RANGER MONSTRO 8K VV",2019,"Monstro 8K VV",R_ISO,[800],[],"deg",C_DSMC2,F_R8K),
+  M("RED","RANGER HELIUM 8K S35",2019,"Helium 8K S35",R_ISO,[800],[],"deg",C_DSMC2,F_R8K),
+  M("RED","RANGER GEMINI 5K S35",2019,"Gemini 5K S35",R_ISO,[800,3200],[],"deg",C_DSMC2,F_GEM),
+  M("RED","KOMODO 6K",2020,"S35 6K global shutter",R_ISO,[800],[],"deg",C_KOM,F_KOM),
+  M("RED","V-RAPTOR 8K VV",2021,"8K VV",R_ISO,[800],[],"deg",C_R3,F_VR),
+  M("RED","V-RAPTOR XL 8K VV",2022,"8K VV",R_ISO,[800],NDV,"deg",C_R3,F_VR),
+  M("RED","V-RAPTOR 8K S35",2023,"8K S35",R_ISO,[800],[],"deg",C_R3,F_VR),
+  M("RED","V-RAPTOR XL 8K S35",2023,"8K S35",R_ISO,[800],NDV,"deg",C_R3,F_VR),
+  M("RED","KOMODO-X 6K",2023,"S35 6K global shutter",R_ISO,[800],[],"deg",C_R3,F_KOM),
+  M("RED","V-RAPTOR [X] 8K VV",2024,"8K VV global shutter",R_ISO,[800],[],"deg",C_R3,F_VR),
+  M("RED","V-RAPTOR XL [X] 8K VV",2024,"8K VV global shutter",R_ISO,[800],NDV,"deg",C_R3,F_VR),
+  M("RED","V-RAPTOR XE",2025,"8K VV global shutter",R_ISO,[800],[],"deg",C_R3,F_VR),
+
+  M("Sony","PMW-F3",2011,"S35",[200,6400],[800],[],"frac",["XDCAM EX MPEG-2 35 Mbps","RGB 4:4:4 S-Log (SDI, gravador externo)"],["1920×1080","1440×1080","1280×720"]),
+  M("Sony","NEX-FS100",2011,"S35",[320,6400],[500],[],"frac",["AVCHD"],["1920×1080","1280×720"]),
+  M("Sony","F65",2012,"8K (20 MP)",[400,3200],[800],[0.3,0.6,1.2,1.8],"deg",["F65RAW-SQ","F65RAW-Lite","F65RAW-HFR","SR-SQ (SRFile)","SR-HQ (SRFile)"],["4K 17:9 (4096×2160)","UHD (3840×2160)","2K (2048×1080)","HD (1920×1080)"]),
+  M("Sony","NEX-FS700",2012,"S35",[320,12800],[500],ND3,"frac",["AVCHD","4K RAW por saída (gravador externo)"],["1920×1080","4K RAW (4096×2160)","2K RAW (2048×1080)"]),
+  M("Sony","PMW-F55",2013,"S35 4K",[320,5000],[1250],[0.9,1.8],"deg",C_F55,F_SDCI),
+  M("Sony","PMW-F5",2013,"S35",[500,8000],[2000],[0.9,1.8],"deg",C_F55,F_SDCI),
+  M("Sony","PXW-FS7",2014,"S35 4K",[500,8000],[2000],ND3,"frac",C_FS7,["4K (4096×2160)","QFHD (3840×2160)","HD (1920×1080)"]),
+  M("Sony","PXW-FS5",2015,"S35 4K",[800,12800],[3200],NDV,"frac",["XAVC-L","AVCHD","RAW por saída (licença)"],["QFHD (3840×2160)","HD (1920×1080)"]),
+  M("Sony","PXW-FS7 II",2016,"S35 4K",[500,8000],[2000],NDV,"frac",C_FS7,["4K (4096×2160)","QFHD (3840×2160)","HD (1920×1080)"]),
+  M("Sony","PXW-FS5 II",2017,"S35 4K",[800,12800],[3200],NDV,"frac",["XAVC-L","AVCHD","RAW por saída"],["QFHD (3840×2160)","HD (1920×1080)"]),
+  M("Sony","VENICE",2017,"FF 6K",[125,10000],[500,2500],NDVEN,"deg",C_VEN,F_VEN),
+  M("Sony","PXW-FX9",2019,"FF 6K",[200,16000],[800,4000],NDV,"frac",["XAVC-I","XAVC-L","MPEG-2 HD","RAW 16-bit por saída (XDCA-FX9)"],["FF 6K → 4K DCI (4096×2160)","FF 6K → UHD (3840×2160)","FF 5K crop","S35 4K","HD (1920×1080)"]),
+  M("Sony","FX6",2020,"FF",[200,51200],[800,12800],NDV,"frac",[...C_XS,"RAW 16-bit por saída SDI"],["DCI 4K (4096×2160)","UHD (3840×2160)","HD (1920×1080)"]),
+  M("Sony","FX3",2021,"FF",C_ISO,[800,12800],[],"frac",[...C_XS,"RAW 16-bit por HDMI"],["UHD (3840×2160)","HD (1920×1080)"]),
+  M("Sony","VENICE 2 8K",2022,"FF 8.6K",[200,12800],[800,3200],NDVEN,"deg",C_VEN2,F_VEN2_8K),
+  M("Sony","VENICE 2 6K",2022,"FF 6K",[125,10000],[500,2500],NDVEN,"deg",C_VEN2,F_VEN),
+  M("Sony","FR7",2022,"FF (PTZ)",C_ISO,[800,12800],NDV,"frac",C_XS,["UHD (3840×2160)","HD (1920×1080)"]),
+  M("Sony","FX30",2022,"S35 (APS-C)",[100,32000],[800,2500],[],"frac",C_XS,["UHD (3840×2160, de 6K)","HD (1920×1080)"]),
+  M("Sony","BURANO",2023,"FF 8.6K",[200,12800],[800,3200],NDV,"deg",["X-OCN LT","XAVC H (H.265)","XAVC-I","XAVC-L"],["8.6K 16:9 FF","8.6K 17:9 FF","6K FF (crop)","5.8K S35","4K S35","3.8K UHD S35","1.9K S35"]),
+  M("Sony","FX2",2025,"FF 33 MP",[100,51200],[800,4000],[],"frac",[...C_XS,"RAW 16-bit por HDMI"],["DCI 4K (4096×2160)","UHD (3840×2160)","S35 4K","HD (1920×1080)"]),
+
+  M("Canon","EOS C300",2012,"S35",[320,20000],[850],ND3,"frac",["XF Codec MPEG-2 4:2:2 50 Mbps"],["1920×1080","1280×720"]),
+  M("Canon","EOS C500",2012,"S35 4K",[320,20000],[850],ND3,"frac",["4K RAW 10-bit por saída","XF Codec MPEG-2 HD"],["4K RAW (4096×2160)","QFHD (3840×2160)","2K (2048×1080)","HD (1920×1080)"]),
+  M("Canon","EOS-1D C",2012,"APS-H",[100,25600],[400],[],"frac",["Motion JPEG 4K","H.264 ALL-I","H.264 IPB"],["4K DCI (4096×2160)","Full HD (1920×1080)"]),
+  M("Canon","EOS C100",2012,"S35",[320,20000],[850],ND3,"frac",["AVCHD"],["1920×1080"]),
+  M("Canon","EOS C100 Mark II",2014,"S35",[320,102400],[850],ND3,"frac",["AVCHD","MP4"],["1920×1080"]),
+  M("Canon","EOS C300 Mark II",2015,"S35 4K",C_ISO,[800],ND5,"frac",["XF-AVC Intra","XF-AVC Long GOP"],F_C4K),
+  M("Canon","EOS C700",2016,"S35 4.5K",C_ISO,[800],ND5,"frac",["XF-AVC Intra","XF-AVC Long GOP","ProRes 4444 XQ","ProRes 4444","ProRes 422 HQ","ProRes 422","Cinema RAW (gravador Codex)"],["RAW 4.5K (4512×2376)",...F_C4K]),
+  M("Canon","EOS C700 FF",2017,"FF 5.9K",C_ISO,[800],ND5,"frac",["XF-AVC Intra","XF-AVC Long GOP","ProRes 4444 XQ","ProRes 4444","ProRes 422 HQ","ProRes 422","Cinema RAW (gravador Codex)"],["RAW 5.9K (5952×3140)",...F_C4K]),
+  M("Canon","EOS C200",2017,"S35 4K",C_ISO,[800],ND5,"frac",["Cinema RAW Light","MP4 H.264","XF-AVC"],["RAW 4K DCI (4096×2160)","UHD (3840×2160)","2K (2048×1080)","HD (1920×1080)"]),
+  M("Canon","EOS C500 Mark II",2019,"FF 5.9K",C_ISO,[800],ND5,"frac",["Cinema RAW Light","XF-AVC Intra","XF-AVC Long GOP"],["RAW 5.9K FF (5952×3140)","4K S35 crop","2K S16 crop",...F_C4K]),
+  M("Canon","EOS C300 Mark III",2020,"S35 4K DGO",C_ISO,[800],ND5,"frac",["Cinema RAW Light","XF-AVC Intra","XF-AVC Long GOP"],["RAW 4K DCI (4096×2160)","2K crop","UHD (3840×2160)","HD (1920×1080)"]),
+  M("Canon","EOS C70",2020,"S35 4K DGO",C_ISO,[800],ND5,"frac",["XF-AVC","MP4 HEVC 10-bit","MP4 H.264","Cinema RAW Light"],F_C4K),
+  M("Canon","EOS R5 C",2022,"FF 8K",C_ISO,[800],[],"frac",["Cinema RAW Light","XF-AVC","MP4 HEVC","MP4 H.264"],["RAW 8K DCI (8192×4320)","5.9K S35 crop",...F_C4K]),
+  M("Canon","EOS C400",2024,"FF 6K",C_ISO,[800,3200,12800],ND5,"frac",C_CRL6,["RAW 6K FF","4K S35","2K S16",...F_C4K]),
+  M("Canon","EOS C80",2024,"FF 6K",C_ISO,[800,3200,12800],ND5,"frac",["Cinema RAW Light LT","XF-AVC","XF-AVC S","XF-HEVC S"],["RAW 6K FF","4K S35","2K S16",...F_C4K]),
+  M("Canon","EOS C50",2025,"FF 7K",C_ISO,[800,6400],[],"frac",C_CRL6,["7K Open Gate 3:2 (6960×4640)",...F_C4K]),
 ];
+const BRAND_ORDER=["ARRI","Canon","RED","Sony"];
 const ND_VALS=["0.3","0.6","0.9","1.2","1.5","1.8","2.1"];
 const FILTER_PRESETS=[
   ...ND_VALS.map(v=>({group:"ND",label:v,code:`ND${v}`})),
@@ -356,7 +484,32 @@ const lensById=(p,id)=>p.lenses.find(l=>l.id===id);
 const filtById=(p,id)=>p.filters.find(f=>f.id===id);
 const nextLetter=p=>"ABCDEFGH".split("").find(l=>!p.unitOrder.includes(l));
 
-function freshStore(){return {v:2,projects:{},order:[],activeId:null,lastBackup:0}}
+function freshStore(){return {v:2,projects:{},order:[],activeId:null,lastBackup:0,catalogEdits:{},userBrands:[],userModels:[]}}
+const basesOf=m=>m&&m.bases&&m.bases.length?m.bases:(m&&m.base?[m.base]:[]);
+const cleanModel=m=>{const c=clone(m); delete c.builtin; delete c.edited; return c};
+function allModels(){
+  return CATALOG.map(m=>store.catalogEdits[m.catalogId]?{...clone(store.catalogEdits[m.catalogId]),catalogId:m.catalogId,builtin:true,edited:true}:{...m,builtin:true})
+    .concat(store.userModels.map(m=>({...m,builtin:false})));
+}
+const modelById=id=>allModels().find(m=>m.catalogId===id);
+function brandList(){
+  const s=new Set(allModels().map(m=>m.brand)); store.userBrands.forEach(b=>s.add(b));
+  return [...s].filter(Boolean).sort((a,b)=>{const ia=BRAND_ORDER.indexOf(a), ib=BRAND_ORDER.indexOf(b); return ((ia<0?99:ia)-(ib<0?99:ib))||a.localeCompare(b)});
+}
+function normalizeStore(s){
+  s.catalogEdits=s.catalogEdits||{}; s.userBrands=s.userBrands||[]; s.userModels=s.userModels||[];
+  Object.values(s.projects||{}).forEach(p=>Object.values(p.units||{}).forEach(u=>{
+    if(!u.model.bases) u.model.bases=u.model.base?[u.model.base]:[];
+    if(!u.sensor) u.sensor={start:"",end:""};
+  }));
+  return s;
+}
+function fitUnitToModel(u){
+  const m=u.model;
+  if(!m.codecs.includes(u.codec)) u.codec=m.codecs[0]||"";
+  if(!m.formats.includes(u.format)) u.format=m.formats[0]||"";
+  if(!m.ei.includes(u.cur.iso)) u.cur.iso=basesOf(m)[0]||m.ei[0]||800;
+}
 function newProject(name,produtora){
   const key="d1-"+today();
   return {id:newId(),name,produtora:produtora||"",createdAt:Date.now(),updatedAt:Date.now(),
@@ -366,9 +519,10 @@ function newProject(name,produtora){
     opts:{measures:false}};
 }
 function newUnit(letter,model){
-  return {model:clone(model),codec:model.codecs[0]||"",format:model.formats[0]||"",roll:letter+"001",clip:1,
-    slate:{cena:"1",plano:"1",take:1},
-    cur:{lensId:null,focal:null,iris:2.8,shMode:model.sh||"deg",shDeg:180,shFrac:50,fps:24,iso:model.base||(model.ei[0]||800),wb:5600,ndInt:null,filters:[],aval:"",obs:"",dist:"",alt:""}};
+  const m=cleanModel(model); if(!m.bases) m.bases=m.base?[m.base]:[];
+  return {model:m,codec:m.codecs[0]||"",format:m.formats[0]||"",roll:letter+"001",clip:1,
+    slate:{cena:"1",plano:"1",take:1},sensor:{start:"",end:""},
+    cur:{lensId:null,focal:null,iris:2.8,shMode:m.sh||"deg",shDeg:180,shFrac:50,fps:24,iso:basesOf(m)[0]||m.ei[0]||800,wb:5600,ndInt:null,filters:[],aval:"",obs:"",dist:"",alt:""}};
 }
 function ensureDiaria(p){
   if(!p.diarias.length){const key="d1-"+today()+"-"+newId().slice(0,3);p.diarias.push({key,n:1,date:today(),start:null,end:null});p.diariaKey=key}
@@ -387,7 +541,7 @@ function migrateV1(old){
   Object.entries(old.days).forEach(([k,d])=>{p.days[k]={takes:(d.takes||[]).map(t=>({...t,iris:t.iris||("T"+t.t),format:t.format||"",dist:"",alt:""})),cards:[]}});
   (c.unitOrder||[]).forEach(l=>{
     const ou=c.units[l]; if(!ou) return;
-    const model=CATALOG.find(m=>m.catalogId===ou.camId)||CATALOG[2];
+    const model=CATALOG.find(m=>m.catalogId===ou.camId)||CATALOG.find(m=>m.name==="ALEXA Mini LF");
     const u=newUnit(l,model); u.roll=ou.roll; u.clip=ou.clip; u.slate=clone(ou.slate); u.codec=ou.codec||u.codec;
     p.units[l]=u; p.unitOrder.push(l);
   });
@@ -396,8 +550,8 @@ function migrateV1(old){
   return s;
 }
 function load(){
-  try{const r=localStorage.getItem(LS2); if(r){const o=JSON.parse(r); if(o&&o.v===2&&o.projects) return o}}catch(e){}
-  try{const r=localStorage.getItem(LS1); if(r){const o=JSON.parse(r); if(o&&o.cfg&&o.cfg.updatedAt) return migrateV1(o)}}catch(e){}
+  try{const r=localStorage.getItem(LS2); if(r){const o=JSON.parse(r); if(o&&o.v===2&&o.projects) return normalizeStore(o)}}catch(e){}
+  try{const r=localStorage.getItem(LS1); if(r){const o=JSON.parse(r); if(o&&o.cfg&&o.cfg.updatedAt) return normalizeStore(migrateV1(o))}}catch(e){}
   return freshStore();
 }
 function save(){try{localStorage.setItem(LS2,JSON.stringify(store));localOk=true}catch(e){localOk=false}}
@@ -415,7 +569,7 @@ const needsBackup=()=>{const lt=lastTakeTs();return lt>0&&(!store.lastBackup||st
 const backupData=()=>JSON.stringify({app:"boletim-camera",v:2,exportedAt:Date.now(),data:store});
 function parseBackup(text){
   const o=JSON.parse(text);
-  if(o&&o.app==="boletim-camera"&&o.v===2&&o.data&&o.data.projects) return {data:o.data,exportedAt:o.exportedAt||0};
+  if(o&&o.app==="boletim-camera"&&o.v===2&&o.data&&o.data.projects) return {data:normalizeStore(o.data),exportedAt:o.exportedAt||0};
   const d1=o&&o.app==="boletim-camera"?o.data:o;
   if(d1&&d1.cfg&&d1.days) {const s=migrateV1({...d1,cfg:{...d1.cfg,updatedAt:1}}); return {data:s,exportedAt:o.exportedAt||0}}
   throw new Error("formato");
@@ -478,6 +632,8 @@ function dayResumo(p,d,meta){
   TEAM.forEach(([k,l])=>{if(tm[k]) L.push(`${l}: ${tm[k]}`)});
   TEAM_OPT.forEach(([k,l])=>{if(tm[k]) L.push(`${l}: ${tm[k]}`)});
   (tm.extras||[]).forEach(x=>{if(x.role||x.name) L.push(`${x.role||"Função"}: ${x.name}`)});
+  const sh=p.unitOrder.map(k=>{const s=sensorInfo(p.units[k]); return s?`CAM ${k} · ${p.units[k].model.name}: ${s}`:""}).filter(Boolean);
+  if(sh.length){L.push("","HORAS DO SENSOR"); sh.forEach(x=>L.push(x))}
   L.push("","CÂMERAS E CARTÕES");
   const byRoll={}; d.takes.forEach(t=>{const k=t.unit+"|"+t.roll;(byRoll[k]=byRoll[k]||[]).push(t)});
   Object.entries(byRoll).forEach(([k,ts])=>{
@@ -641,8 +797,8 @@ function viewTake(){
 
   <section class="blk">
     <div class="blk-h"><span class="lbl">${esc(isoL)}</span><span class="val">${esc(isoL)} ${esc(c.iso)}</span></div>
-    <div class="strip" id="s-iso">${(m.ei||[]).map(x=>chip("set","iso",x,x,Number(c.iso)===x,x===m.base?"base":"")).join("")}</div>
-    ${m.base?`<span class="hint">O ponto marca o ${esc(isoL)} base (${esc(m.base)}).</span>`:""}
+    <div class="strip" id="s-iso">${(m.ei||[]).map(x=>chip("set","iso",x,x,Number(c.iso)===x,basesOf(m).includes(x)?"base":"")).join("")}</div>
+    ${basesOf(m).length?`<span class="hint">${basesOf(m).length>1?"Os pontos marcam as bases":"O ponto marca a base"}: ${esc(basesOf(m).join(" · "))}.</span>`:""}
   </section>
 
   <section class="blk">
@@ -653,7 +809,8 @@ function viewTake(){
 
   <section class="blk">
     <div class="blk-h"><span class="lbl">Filtros</span><span class="val">${esc([c.ndInt?`ND${c.ndInt}(int)`:"",...c.filters.map(id=>(filtById(p,id)||{}).code)].filter(Boolean).join(" ")||"nenhum")}</span></div>
-    ${nd.length?`<div class="sub">ND interno da câmera</div><div class="wrapchips">${chip("ndInt","nd","","—",!c.ndInt,"txt")}${nd.map(x=>chip("ndInt","nd",x,x,c.ndInt===x)).join("")}</div>`:""}
+    ${nd.length?`<div class="sub">ND interno da câmera</div><div class="wrapchips">${chip("ndInt","nd","","—",!c.ndInt,"txt")}${[...new Set([...nd,...(c.ndInt?[c.ndInt]:[])])].sort((a,b)=>a-b).map(x=>chip("ndInt","nd",x,fmtNum(x),c.ndInt===x)).join("")}</div>
+      <label class="mini">Outro ND <input type="text" inputmode="decimal" class="mono" id="in-ndint" data-bind="ndInt" placeholder="ex.: 1.35"></label>`:""}
     <div class="sub">Na matte box</div>
     ${p.filters.length?`<div class="wrapchips">${p.filters.map(f=>chip("filter","f",f.id,`${esc(f.label)}<small>${esc(f.group)}</small>`,c.filters.includes(f.id),f.label.length>4?"txt":"")).join("")}</div>`:`<div class="row2"><span class="hint">Nenhum filtro cadastrado.</span><button type="button" class="btn sm" data-act="sheet" data-v="addFilters">+ Cadastrar filtros</button></div>`}
   </section>
@@ -687,6 +844,13 @@ function clockHTML(p,d){
       <button type="button" class="btn" data-act="sheet" data-v="editDay" data-id="${esc(d.key)}">Editar diária</button>
     </div>`;
 }
+function sensorInfo(u){
+  const s=u.sensor||{}, a=num(s.start), b=num(s.end), parts=[];
+  if(s.start) parts.push(`Início ${s.start} h${s.startTs?` (anotado em ${new Date(s.startTs).toLocaleDateString("pt-BR")})`:""}`);
+  if(s.end) parts.push(`Fim ${s.end} h${s.endTs?` (anotado em ${new Date(s.endTs).toLocaleDateString("pt-BR")})`:""}`);
+  if(a>=0&&b>=a&&s.start&&s.end) parts.push(`${fmtNum(b-a)} h de uso no filme`);
+  return parts.join(" · ");
+}
 function viewKit(){
   const p=P(), d=curDiaria(p);
   const days=p.diarias.slice().sort((a,b)=>b.n-a.n).map(x=>{
@@ -708,7 +872,14 @@ function viewKit(){
         <label>Formato / resolução<select id="in-format-${k}" data-bind="format" data-u="${k}">${m.formats.map(x=>`<option ${x===u.format?"selected":""}>${esc(x)}</option>`).join("")||"<option>—</option>"}</select></label>
         <label>Cartão<input type="text" class="mono" id="in-roll-${k}" data-bind="roll" data-u="${k}" value="${esc(u.roll)}" autocapitalize="characters"></label>
         <label>Próximo clipe<input type="number" class="mono" inputmode="numeric" min="1" id="in-clip-${k}" data-bind="clip" data-u="${k}" value="${esc(u.clip)}"></label>
-      </div></div>`}).join("");
+      </div>
+      <div class="sub">Horas do sensor</div>
+      <div class="grid2">
+        <label>Início do filme (h)<input type="text" inputmode="decimal" class="mono" id="in-sh0-${k}" data-bind="sensor" data-f="start" data-u="${k}" value="${esc(u.sensor.start)}" placeholder="ex.: 1234.5"></label>
+        <label>Fim do filme (h)<input type="text" inputmode="decimal" class="mono" id="in-sh1-${k}" data-bind="sensor" data-f="end" data-u="${k}" value="${esc(u.sensor.end)}" placeholder="ex.: 1302"></label>
+      </div>
+      ${sensorInfo(u)?`<span class="hint">${esc(sensorInfo(u))}</span>`:`<span class="hint">Anote o contador de horas da câmera no primeiro e no último dia.</span>`}
+      </div>`}).join("");
   const series={}; allLensSorted(p).forEach(l=>{(series[l.series]=series[l.series]||[]).push(l)});
   const lensGroups=Object.entries(series).map(([s,ls])=>{const del=armed==="delSeries:"+s;return `<div class="series">
     <div class="series-h"><b>${esc(s)}</b><span>${ls.length} ${ls.length===1?"lente":"lentes"}</span>
@@ -850,28 +1021,51 @@ function renderSheet(){
         `<button type="button" class="btn pri" data-act="saveNewProj">Criar projeto</button>`); break;
     case "renameProj": {const q=store.projects[sheet.id]; h=sheetWrap("Renomear projeto",`<div class="form"><label class="full">Nome do projeto<input type="text" id="sh-name" data-autofocus value="${esc(q?q.name:"")}"></label></div>`,`<button type="button" class="btn pri" data-act="saveRename">Salvar</button>`); break}
     case "addCam": {
-      const brands={}; CATALOG.forEach(m=>{(brands[m.brand]=brands[m.brand]||[]).push(m)});
-      h=sheetWrap(`Adicionar câmera ${nextLetter(p)||""}`,`
-        ${Object.entries(brands).map(([b,ms])=>`<div class="sub">${esc(b)}</div><div class="wrapchips">${ms.map(m=>`<button type="button" class="chip txt" data-act="pickModel" data-v="${esc(m.catalogId)}">${esc(m.name)}</button>`).join("")}</div>`).join("")}
-        <p class="note">Codecs e formatos vêm das fichas da ARRI. Depois de adicionar, dá para tirar ou incluir qualquer item em Editar.</p>
-        <button type="button" class="btn" data-act="pickModel" data-v="">Outra câmera (cadastro manual)</button>`,""); break}
+      const L=nextLetter(p)||"";
+      if(!sheet.brand){
+        const bl=brandList(), all=allModels();
+        h=sheetWrap(`Adicionar câmera ${L}`,`<div class="sub">1 · Escolha a marca</div>
+          <div class="list">${bl.map(b=>{const n=all.filter(m=>m.brand===b).length;return `<button type="button" class="li" style="text-align:left;font:inherit;color:inherit" data-act="addCamBrand" data-v="${esc(b)}"><span class="t"><b>${esc(b)}</b><small>${n} ${n===1?"modelo":"modelos"}</small></span><span class="hint">›</span></button>`}).join("")}</div>
+          <button type="button" class="btn add" data-act="sheet" data-v="newBrand">+ Cadastrar marca</button>`,"");
+      } else {
+        const b=sheet.brand, ms=allModels().filter(m=>m.brand===b).sort((x,y)=>(Number(y.year)||0)-(Number(x.year)||0)||x.name.localeCompare(y.name));
+        const isUserBrand=store.userBrands.includes(b)&&!CATALOG.some(m=>m.brand===b);
+        h=sheetWrap(`${b}`,`<button type="button" class="btn sm" data-act="addCamBack" style="align-self:flex-start">‹ Marcas</button>
+          <div class="sub">2 · Escolha o modelo (CAM ${esc(L)})</div>
+          ${ms.length?`<div class="list">${ms.map(m=>`<div class="li"><button type="button" class="t" style="background:none;border:0;text-align:left;padding:0;font:inherit;color:inherit" data-act="pickModel" data-v="${esc(m.catalogId)}"><b>${esc(m.name)}</b><small>${esc([m.year,m.sensor,m.edited?"editado por você":"",m.builtin?"":"cadastrado por você"].filter(Boolean).join(" · "))}</small></button><button type="button" class="btn sm" data-act="editModel" data-v="${esc(m.catalogId)}">Editar</button></div>`).join("")}</div>`:`<p class="hint">Nenhum modelo desta marca ainda.</p>`}
+          <button type="button" class="btn add" data-act="newModel" data-v="${esc(b)}">+ Cadastrar modelo ${esc(b)}</button>
+          ${isUserBrand&&!ms.length?`<button type="button" class="btn sm danger" data-act="delBrand" data-v="${esc(b)}">Excluir marca</button>`:""}`,"");
+      }
+      break}
+    case "newBrand": h=sheetWrap("Cadastrar marca",`<div class="form"><label class="full">Nome da marca<input type="text" id="sh-brandname" data-autofocus placeholder="ex.: Blackmagic Design"></label></div>
+        <span class="hint">Depois você cadastra os modelos dessa marca.</span>`,`<button type="button" class="btn pri" data-act="saveBrand">Cadastrar marca</button>`); break;
     case "editCam": {
-      const m=sheet.draft;
-      h=sheetWrap(sheet.letter?`Editar CAM ${sheet.letter}`:"Nova câmera",`<div class="form">
+      const m=sheet.draft, mode=sheet.mode;
+      const title=mode==="unit"?`Editar CAM ${sheet.letter}`:mode==="catalog"?`Editar ${m.name}`:`Novo modelo ${m.brand}`;
+      const isBuiltin=mode==="catalog"&&CATALOG.some(c=>c.catalogId===sheet.id), edited=isBuiltin&&!!store.catalogEdits[sheet.id];
+      const armedR=armed==="restoreModel:"+sheet.id, armedD=armed==="delModel:"+sheet.id;
+      const users=mode==="catalog"?Object.values(store.projects).reduce((a,q)=>a+q.unitOrder.filter(k=>q.units[k].model.catalogId===sheet.id).length,0):0;
+      h=sheetWrap(title,`${mode==="unit"?`<p class="note">Muda só a CAM ${esc(sheet.letter)} deste projeto. Para mudar o modelo para todos, edite pelo catálogo em + Adicionar câmera.</p>`:""}
+        <div class="form">
         <label>Marca<input type="text" id="sh-brand" data-draft="brand" value="${esc(m.brand)}" placeholder="ex.: Sony"></label>
         <label>Modelo<input type="text" id="sh-model" data-draft="name" value="${esc(m.name)}" placeholder="ex.: VENICE 2" data-autofocus></label>
+        <label>Ano<input type="text" inputmode="numeric" class="mono" id="sh-year" data-draft="year" value="${esc(m.year||"")}"></label>
+        <label>Sensor<input type="text" id="sh-sensor" data-draft="sensor" value="${esc(m.sensor||"")}" placeholder="ex.: FF 8.6K"></label>
         <label class="full">${esc(m.isoLabel||"ISO")} disponíveis (separe por vírgula)<input type="text" class="mono" id="sh-ei" data-draft="ei" value="${esc(m.ei.join(", "))}"></label>
-        <label>${esc(m.isoLabel||"ISO")} base<input type="text" inputmode="numeric" class="mono" id="sh-base" data-draft="base" value="${esc(m.base||"")}"></label>
+        <label>Base(s)<input type="text" class="mono" id="sh-bases" data-draft="bases" value="${esc(basesOf(m).join(", "))}" placeholder="800, 3200"></label>
         <label>Nome do ganho<select id="sh-isol" data-draft="isoLabel"><option ${m.isoLabel==="EI"?"selected":""}>EI</option><option ${m.isoLabel!=="EI"?"selected":""}>ISO</option></select></label>
         <label>Shutter padrão<select id="sh-sh" data-draft="sh"><option value="deg" ${m.sh==="deg"?"selected":""}>Ângulo (180°)</option><option value="frac" ${m.sh==="frac"?"selected":""}>Fração (1/50)</option></select></label>
-        <label>ND interno (opcional)<input type="text" class="mono" id="sh-nd" data-draft="nd" value="${esc(m.nd.join(", "))}" placeholder="0.6, 1.2, 1.8"></label></div>
+        <label>ND interno<input type="text" class="mono" id="sh-nd" data-draft="nd" value="${esc(m.nd.join(", "))}" placeholder="0.6, 1.2, 1.8"></label></div>
         <div class="sub">Codecs (${m.codecs.length})</div>
         <div class="wrapchips">${m.codecs.map((c,i)=>`<span class="tag">${esc(c)}<button type="button" data-act="draftDel" data-f="codecs" data-v="${i}" aria-label="Tirar ${esc(c)}">×</button></span>`).join("")||`<span class="hint">Nenhum codec.</span>`}</div>
         <div class="row2"><input type="text" id="sh-addcodec" placeholder="Incluir codec (ex.: X-OCN XT)" style="flex:1"><button type="button" class="btn" data-act="draftAdd" data-f="codecs" data-v="sh-addcodec">Incluir</button></div>
         <div class="sub">Formatos / resoluções (${m.formats.length})</div>
         <div class="list">${m.formats.map((c,i)=>`<div class="li"><span class="t">${esc(c)}</span><button type="button" class="x" data-act="draftDel" data-f="formats" data-v="${i}" aria-label="Tirar formato">×</button></div>`).join("")||`<div class="li"><span class="t hint">Nenhum formato.</span></div>`}</div>
-        <div class="row2"><input type="text" id="sh-addformat" placeholder="Incluir formato (ex.: 4K 17:9 Open Gate)" style="flex:1"><button type="button" class="btn" data-act="draftAdd" data-f="formats" data-v="sh-addformat">Incluir</button></div>`,
-        `<button type="button" class="btn pri" data-act="saveCam">${sheet.letter?"Salvar câmera":"Adicionar câmera"}</button>`); break}
+        <div class="row2"><input type="text" id="sh-addformat" placeholder="Incluir formato (ex.: 4K 17:9 Open Gate)" style="flex:1"><button type="button" class="btn" data-act="draftAdd" data-f="formats" data-v="sh-addformat">Incluir</button></div>
+        ${mode==="catalog"&&users?`<label class="row2" style="font-size:14px"><input type="checkbox" id="sh-apply" checked style="width:20px;height:20px"> Aplicar também às ${users} ${users===1?"câmera já cadastrada":"câmeras já cadastradas"} com este modelo</label>`:""}`,
+        mode==="unit"?`<button type="button" class="btn pri" data-act="saveCam">Salvar CAM ${esc(sheet.letter)}</button>`
+        :mode==="catalog"?`${edited?`<button type="button" class="btn ${armedR?"armed":""}" data-act="restoreModel" data-v="${esc(sheet.id)}">${armedR?"Confirmar: voltar ao original":"Restaurar original"}</button>`:""}${!isBuiltin?`<button type="button" class="btn danger ${armedD?"armed":""}" data-act="delModel" data-v="${esc(sheet.id)}">${armedD?"Confirmar exclusão":"Excluir modelo"}</button>`:""}<button type="button" class="btn pri" data-act="saveCam">Salvar no catálogo</button>`
+        :`<button type="button" class="btn pri" data-act="saveCam">Cadastrar e adicionar</button>`); break}
     case "rec": {
       const u=U(); if(!u){closeSheet();return}
       h=sheetWrap(`Gravação · CAM ${p.active}`,`
@@ -992,7 +1186,7 @@ document.addEventListener("click",async e=>{
     case "tab": view=v; openTake=null; armed=null; render(); window.scrollTo(0,0); return;
     case "unit": p.active=v; commit(); render(); return;
     case "sheet": {
-      if(v==="editCam"){const k=el.dataset.id; openSheet({type:"editCam",letter:k,draft:clone(p.units[k].model)}); return}
+      if(v==="editCam"){const k=el.dataset.id, d=clone(p.units[k].model); if(!d.bases) d.bases=basesOf(d); openSheet({type:"editCam",mode:"unit",letter:k,draft:d}); return}
       openSheet({type:v,id:el.dataset.id}); return;
     }
     case "closeSheet": closeSheet(); return;
@@ -1077,27 +1271,54 @@ document.addEventListener("click",async e=>{
       armed=null; commit(); render(); toast("Diária excluída"); return;
     }
     /* câmeras */
+    case "addCamBrand": sheet.brand=v; renderSheet(); return;
+    case "addCamBack": sheet.brand=null; armed=null; renderSheet(); return;
+    case "saveBrand": {
+      const b=$("#sh-brandname").value.trim(); if(!b){toast("Digite o nome da marca");return}
+      const ex=brandList().find(x=>x.toLowerCase()===b.toLowerCase());
+      if(!ex) store.userBrands.push(b); save(); openSheet({type:"addCam",brand:ex||b}); toast(ex?`${ex} já existe`:`Marca ${b} cadastrada`); return;
+    }
+    case "delBrand": store.userBrands=store.userBrands.filter(x=>x!==v); save(); openSheet({type:"addCam",brand:null}); toast(`Marca ${v} excluída`); return;
     case "pickModel": {
-      const m=v?CATALOG.find(x=>x.catalogId===v):{catalogId:"",brand:"",name:"",isoLabel:"ISO",ei:[100,200,400,800,1600,3200,6400,12800],base:800,nd:[],sh:"frac",codecs:[],formats:[]};
-      if(v){const l=nextLetter(p); if(!l) return; p.units[l]=newUnit(l,m); p.unitOrder.push(l); p.active=l; commit(); sheet=null; render(); toast(`CAM ${l}: ${m.name} adicionada`); return}
-      openSheet({type:"editCam",letter:null,draft:clone(m)}); return;
+      const m=modelById(v); if(!m) return; const l=nextLetter(p); if(!l){toast("Limite de 8 câmeras");return}
+      p.units[l]=newUnit(l,m); p.unitOrder.push(l); p.active=l; commit(); sheet=null; render(); toast(`CAM ${l}: ${m.brand} ${m.name} adicionada`); return;
+    }
+    case "editModel": {const m=modelById(v); if(!m) return; const d=cleanModel(m); d.bases=basesOf(d); openSheet({type:"editCam",mode:"catalog",id:v,back:m.brand,draft:d}); return}
+    case "newModel": openSheet({type:"editCam",mode:"new",back:v,draft:{catalogId:"",brand:v,name:"",year:"",sensor:"",isoLabel:"ISO",ei:isoSeries("",100,25600,[800]),bases:[800],nd:[],sh:"frac",codecs:[],formats:[]}}); return;
+    case "restoreModel": {
+      if(armed!=="restoreModel:"+v){arm("restoreModel:"+v);renderSheet();return}
+      delete store.catalogEdits[v]; armed=null; save(); const orig=CATALOG.find(c=>c.catalogId===v); openSheet({type:"addCam",brand:orig?orig.brand:null}); toast("Dados originais restaurados"); return;
+    }
+    case "delModel": {
+      if(armed!=="delModel:"+v){arm("delModel:"+v);renderSheet();return}
+      const b=(store.userModels.find(m=>m.catalogId===v)||{}).brand; store.userModels=store.userModels.filter(m=>m.catalogId!==v);
+      armed=null; save(); openSheet({type:"addCam",brand:b||null}); toast("Modelo excluído"); return;
     }
     case "draftDel": {readDraft(); sheet.draft[el.dataset.f].splice(Number(v),1); renderSheet(); return}
     case "draftAdd": {readDraft(); const inp=$("#"+v), val=inp.value.trim(); if(!val) return; if(!sheet.draft[el.dataset.f].includes(val)) sheet.draft[el.dataset.f].push(val); renderSheet(); const n=$("#"+v); if(n)n.focus(); return}
     case "saveCam": {
+      const apply=!!($("#sh-apply")&&$("#sh-apply").checked);
       readDraft(); const m=sheet.draft;
+      if(!m.brand){toast("Digite a marca");return}
       if(!m.name){toast("Digite o modelo da câmera");return}
       if(!m.ei.length){toast("Digite pelo menos um ISO/EI");return}
-      if(!m.ei.includes(m.base)) m.base=m.ei.includes(800)?800:m.ei[0];
-      if(sheet.letter){
-        const uu=p.units[sheet.letter]; uu.model=m;
-        if(!m.codecs.includes(uu.codec)) uu.codec=m.codecs[0]||"";
-        if(!m.formats.includes(uu.format)) uu.format=m.formats[0]||"";
-        if(!m.ei.includes(uu.cur.iso)) uu.cur.iso=m.base;
-        if(uu.cur.ndInt&&!m.nd.includes(uu.cur.ndInt)) uu.cur.ndInt=null;
-        const lt=sheet.letter; commit(); sheet=null; render(); toast(`CAM ${lt}: ${m.name} salva`); return;
+      m.bases=m.bases.filter(x=>m.ei.includes(x)); if(!m.bases.length) m.bases=[m.ei.includes(800)?800:m.ei[0]];
+      delete m.base;
+      if(sheet.mode==="unit"){
+        const lt=sheet.letter, uu=p.units[lt]; uu.model=m; fitUnitToModel(uu); if(uu.cur.ndInt&&!m.nd.includes(uu.cur.ndInt)) uu.cur.ndInt=null;
+        commit(); sheet=null; render(); toast(`CAM ${lt}: ${m.name} salva`); return;
       }
-      const l=nextLetter(p); if(!l) return; p.units[l]=newUnit(l,m); p.unitOrder.push(l); p.active=l; commit(); sheet=null; render(); toast(`CAM ${l}: ${m.name} adicionada`); return;
+      if(sheet.mode==="catalog"){
+        const id=sheet.id; m.catalogId=id;
+        if(CATALOG.some(c=>c.catalogId===id)) store.catalogEdits[id]=cleanModel(m);
+        else store.userModels=store.userModels.map(x=>x.catalogId===id?cleanModel(m):x);
+        let n=0;
+        if(apply) Object.values(store.projects).forEach(q=>q.unitOrder.forEach(k=>{const uu=q.units[k]; if(uu.model.catalogId===id){uu.model=cleanModel(m); fitUnitToModel(uu); n++}}));
+        save(); openSheet({type:"addCam",brand:m.brand}); render(); toast(`${m.name} salvo no catálogo${n?` e em ${n} ${n===1?"câmera":"câmeras"}`:""}`); return;
+      }
+      m.catalogId="u-"+newId(); store.userModels.push(cleanModel(m)); if(!store.userBrands.includes(m.brand)&&!CATALOG.some(c=>c.brand===m.brand)) store.userBrands.push(m.brand);
+      const l=nextLetter(p); if(l){p.units[l]=newUnit(l,m); p.unitOrder.push(l); p.active=l}
+      commit(); sheet=null; render(); toast(`${m.brand} ${m.name} cadastrada${l?` como CAM ${l}`:""}`); return;
     }
     case "delUnit": {
       if(armed!=="delUnit:"+v){arm("delUnit:"+v);render();return}
@@ -1178,7 +1399,7 @@ function readDraft(){
   if(!sheet||!sheet.draft) return; const m=sheet.draft;
   document.querySelectorAll("#sheetIn [data-draft]").forEach(i=>{
     const f=i.dataset.draft, v=i.value;
-    if(f==="ei") m.ei=numList(v); else if(f==="nd") m.nd=numList(v); else if(f==="base") m.base=num(v)||0; else m[f]=v.trim();
+    if(f==="ei") m.ei=numList(v); else if(f==="nd") m.nd=numList(v); else if(f==="bases") m.bases=numList(v); else if(f==="year") m.year=parseInt(v,10)||""; else m[f]=v.trim();
   });
 }
 
@@ -1202,6 +1423,8 @@ function onBind(el,final){
     case "roll": if(final){const uu=p.units[el.dataset.u]; const r=v.trim().toUpperCase(); if(r&&r!==uu.roll){uu.roll=r; ensureDiaria(p); p.days[p.diariaKey].cards.push({unit:el.dataset.u,roll:r,ts:Date.now()})} commit(); render()} return;
     case "clip": if(final){const uu=p.units[el.dataset.u]; uu.clip=Math.max(1,parseInt(v,10)||1); commit(); render()} return;
     case "codec": case "format": if(final){p.units[el.dataset.u][b]=v; commit()} return;
+    case "ndInt": if(final){const n=num(v); if(n>0){u.cur.ndInt=Math.round(n*100)/100; commit(); render()}} return;
+    case "sensor": if(final){const uu=p.units[el.dataset.u], f=el.dataset.f, s=v.trim().replace(",","."); uu.sensor[f]=s; uu.sensor[f+"Ts"]=s?Date.now():null; commit(); render()} return;
     case "focal": case "wb": case "shDeg": case "shFrac": case "iris": if(final){
       const n=num(v); if(!(n>0)) return;
       if(b==="focal"){const L=lensById(p,u.cur.lensId); if(!L||!L.zoom||n<L.focalMin||n>L.focalMax){toast("Fora da faixa da zoom");return}}
