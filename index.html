@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Boletim de Câmera</title>
-<meta name="description" content="Boletim de câmera para o AC: kit da diária, registro de takes e exportação para o Offload Report.">
+<meta name="description" content="Boletim de câmera para o AC: projetos, kit, registro de takes e exportação para o Offload Report.">
 <meta name="theme-color" content="#14161a">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" type="image/png">
@@ -16,12 +16,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap">
 <style>
-/* Layout: ferramenta de uma mão — cabeçalho fixo com câmera/rolo, faixas de botões empilhadas, doca fixa (registrar + abas). Escuro primeiro: uso no set. */
+/* Layout: ferramenta de uma mão — cabeçalho fixo com câmera/cartão, faixas de botões empilhadas, doca fixa (registrar + abas), folhas de baixo para cadastros. Escuro primeiro: uso no set. */
 :root{
   --bg:#14161a; --surface:#1c1f24; --surface-2:#252930; --line:#31363e;
   --fg:#ecebe6; --muted:#949aa2;
   --accent:#f2a33a; --accent-ink:#1b1206; --accent-soft:rgba(242,163,58,.15);
-  --good:#5bc58a; --bad:#ec6c5f; --warn:#e3c35a;
+  --good:#5bc58a; --bad:#ec6c5f; --warn:#e3c35a; --scrim:rgba(0,0,0,.6);
   --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --f-body:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Consolas,monospace;
@@ -32,7 +32,7 @@
     --bg:#f2f1ed; --surface:#ffffff; --surface-2:#e8e6e0; --line:#d5d2ca;
     --fg:#1a1c1f; --muted:#5b616a;
     --accent:#b0640a; --accent-ink:#ffffff; --accent-soft:rgba(176,100,10,.12);
-    --good:#1c8247; --bad:#bf3a2b; --warn:#8f720c;
+    --good:#1c8247; --bad:#bf3a2b; --warn:#8f720c; --scrim:rgba(0,0,0,.4);
     color-scheme:light;
   }
 }
@@ -40,21 +40,21 @@
   --bg:#f2f1ed; --surface:#ffffff; --surface-2:#e8e6e0; --line:#d5d2ca;
   --fg:#1a1c1f; --muted:#5b616a;
   --accent:#b0640a; --accent-ink:#ffffff; --accent-soft:rgba(176,100,10,.12);
-  --good:#1c8247; --bad:#bf3a2b; --warn:#8f720c;
+  --good:#1c8247; --bad:#bf3a2b; --warn:#8f720c; --scrim:rgba(0,0,0,.4);
   color-scheme:light;
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0}
 [hidden]{display:none!important}
 img{max-width:100%}
 body{
-  background:var(--bg); color:var(--fg); font-family:var(--f-body); font-size:15px; line-height:1.4;
+  margin:0;background:var(--bg); color:var(--fg); font-family:var(--f-body); font-size:15px; line-height:1.4;
   padding-left:max(16px,env(safe-area-inset-left,0px));
   padding-right:max(16px,env(safe-area-inset-right,0px));
   padding-block:0 calc(150px + env(safe-area-inset-bottom,0px));
   -webkit-tap-highlight-color:transparent;
 }
+body.home{padding-bottom:calc(40px + env(safe-area-inset-bottom,0px))}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
@@ -68,30 +68,34 @@ button{cursor:pointer}
   padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));
   border-bottom:1px solid var(--line);
 }
-.top-in{display:flex;align-items:center;gap:12px;padding-block:10px;flex-wrap:wrap}
-.units{display:flex;gap:6px}
+.top-in{display:flex;align-items:center;gap:8px;padding-block:10px;flex-wrap:wrap}
+.menu{width:40px;height:40px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-size:18px;flex:none}
+.brand{font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.06em;text-transform:uppercase}
+.units{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;min-width:0}
 .unit{
-  font-family:var(--f-display);font-weight:700;font-size:17px;letter-spacing:.04em;
+  font-family:var(--f-display);font-weight:700;font-size:17px;letter-spacing:.04em;flex:none;
   min-width:44px;height:40px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);
 }
 .unit[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
-.reel{font-family:var(--f-mono);font-weight:600;font-size:18px;letter-spacing:.02em;margin-left:auto;font-variant-numeric:tabular-nums}
-.reel small{display:block;font-family:var(--f-body);font-weight:500;font-size:11px;color:var(--muted);letter-spacing:0;text-align:right}
-.sync{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);width:100%;margin-top:-4px}
+.reel{font-family:var(--f-mono);font-weight:600;font-size:18px;letter-spacing:.02em;margin-left:auto;font-variant-numeric:tabular-nums;text-align:right}
+.reel small{display:block;font-family:var(--f-body);font-weight:500;font-size:11px;color:var(--muted);letter-spacing:0}
+.sync{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);width:100%;margin-top:-2px;min-width:0}
+.sync span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
 .dot.ok{background:var(--good)} .dot.warn{background:var(--warn)} .dot.bad{background:var(--bad)}
 
 /* Blocos */
 main{display:flex;flex-direction:column;gap:10px;padding-top:12px}
 .blk{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
-.blk-h{display:flex;align-items:baseline;gap:10px;min-width:0}
+.blk-h{display:flex;align-items:center;gap:10px;min-width:0;flex-wrap:wrap}
 .lbl{font-family:var(--f-display);font-weight:600;font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 .val{margin-left:auto;font-family:var(--f-mono);font-weight:600;font-size:15px;text-align:right;min-width:0;overflow-wrap:anywhere}
 .hint{font-size:12.5px;color:var(--muted)}
 .sub{font-family:var(--f-display);font-weight:600;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+p{margin:0}
 
 .strip{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-inline:-12px;padding-inline:12px;scroll-padding-inline:12px;padding-bottom:2px}
-.strip::-webkit-scrollbar{display:none}
+.strip::-webkit-scrollbar,.units::-webkit-scrollbar{display:none}
 .wrapchips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{
   flex:none;min-width:52px;height:46px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);
@@ -106,15 +110,16 @@ main{display:flex;flex-direction:column;gap:10px;padding-top:12px}
 .chip.lens b{font-size:18px}
 .chip.base{position:relative}
 .chip.base::after{content:"";position:absolute;top:5px;right:5px;width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.6}
+.chip.edit{height:40px;font-size:15px}
 
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;flex:none}
-.seg button{border:0;background:transparent;padding:6px 12px;font-family:var(--f-mono);font-weight:600;font-size:14px;color:var(--muted)}
+.seg button{border:0;background:transparent;padding:6px 12px;font-family:var(--f-mono);font-weight:600;font-size:14px;color:var(--muted);min-height:36px}
 .seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
 .row2{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .mini{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
-.mini input{width:84px}
+.mini input{width:96px}
 
-input[type=text],input[type=number],input[type=date],select{
+input[type=text],input[type=number],input[type=date],input[type=time],select{
   height:44px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);padding:0 10px;min-width:0;width:100%;font-size:16px
 }
 input.mono{font-family:var(--f-mono);font-weight:600}
@@ -122,11 +127,20 @@ input.mono{font-family:var(--f-mono);font-weight:600}
 /* Claquete */
 .slate{display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:8px}
 .slate label{display:flex;flex-direction:column;gap:4px;min-width:0}
-.slate label span{font-family:var(--f-display);font-weight:600;font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.slate label span,.fld>span{font-family:var(--f-display);font-weight:600;font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 .slate input{font-family:var(--f-mono);font-weight:600;font-size:20px;text-align:center;height:50px}
 .step{display:flex;align-items:stretch;height:50px;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surface-2)}
+.step.sm{height:40px}
 .step button{width:40px;border:0;background:transparent;font-size:22px;font-weight:600;flex:none}
-.step output{flex:1;display:flex;align-items:center;justify-content:center;font-family:var(--f-mono);font-weight:600;font-size:20px;font-variant-numeric:tabular-nums}
+.step output{flex:1;display:flex;align-items:center;justify-content:center;font-family:var(--f-mono);font-weight:600;font-size:20px;font-variant-numeric:tabular-nums;padding:0 6px}
+.step.sm output{font-size:17px}
+
+/* Cartão / gravação */
+.card-row{display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:center}
+.card-row .big{font-family:var(--f-mono);font-weight:600;font-size:20px}
+.linkrow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;min-height:44px}
+.linkrow span{font-family:var(--f-mono);font-size:13.5px;font-weight:600;overflow-wrap:anywhere;min-width:0}
+.linkrow em{margin-left:auto;font-style:normal;color:var(--accent);font-weight:600;font-size:13px;flex:none}
 
 /* Prévia da linha do boletim */
 .preview{border:1px dashed var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;min-width:0}
@@ -135,9 +149,9 @@ input.mono{font-family:var(--f-mono);font-weight:600}
 .preview code.dim{color:var(--muted)}
 
 .aval{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.aval .chip{width:100%;font-family:var(--f-body);font-size:15px}
+.aval .chip{width:100%;min-width:0;padding:0 4px;font-family:var(--f-body);font-size:14px}
 .aval .chip[data-v="Boa"][aria-pressed="true"]{background:var(--good);border-color:var(--good);color:#fff}
-.aval .chip[data-v="NG"][aria-pressed="true"],.aval .chip[data-v="NV"][aria-pressed="true"]{background:var(--bad);border-color:var(--bad);color:#fff}
+.aval .chip[data-v="False Take"][aria-pressed="true"],.aval .chip[data-v="NV"][aria-pressed="true"]{background:var(--bad);border-color:var(--bad);color:#fff}
 
 /* Doca */
 .dock{
@@ -151,18 +165,20 @@ input.mono{font-family:var(--f-mono);font-weight:600}
   font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.05em;text-transform:uppercase;
 }
 .reg:active{transform:translateY(1px)}
-.tabs{display:grid;grid-template-columns:repeat(3,1fr)}
-.tabs button{border:0;background:transparent;height:46px;font-family:var(--f-display);font-weight:600;font-size:16px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border-top:2px solid transparent}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr)}
+.tabs button{border:0;background:transparent;height:46px;font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-top:2px solid transparent}
 .tabs button[aria-current="page"]{color:var(--fg);border-top-color:var(--accent)}
 
-.btn{height:44px;padding:0 14px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);font-weight:600;font-size:14px}
+.btn{min-height:44px;padding:0 14px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);font-weight:600;font-size:14px}
 .btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn.danger{color:var(--bad)}
 .btn.armed{background:var(--bad);border-color:var(--bad);color:#fff}
-.btn.sm{height:36px;padding:0 10px;font-size:13px}
+.btn.sm{min-height:36px;padding:0 10px;font-size:13px}
+.btn.full{width:100%}
+.btn.add{border-style:dashed;color:var(--accent);background:transparent}
 
 /* Boletim */
-.group{display:flex;flex-direction:column;gap:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.group{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .group-h{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .group-h b{font-family:var(--f-mono);font-size:17px}
 .group-h span{font-size:12.5px;color:var(--muted)}
@@ -173,39 +189,74 @@ input.mono{font-family:var(--f-mono);font-weight:600}
 .take-row .clip{font-family:var(--f-mono);font-weight:600;font-size:15px}
 .take-row .sl{font-weight:600;font-size:14px}
 .take-row .spec{grid-column:2/4;font-family:var(--f-mono);font-size:12px;color:var(--muted);overflow-wrap:anywhere}
-.pill{font-size:12px;font-weight:600;padding:3px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+.cardlog{grid-column:1/-1;font-size:12px;color:var(--muted);padding:6px 12px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.pill{font-size:12px;font-weight:600;padding:3px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
 .pill.Boa{background:var(--good);border-color:var(--good);color:#fff}
 .pill.OK{border-color:var(--good);color:var(--good)}
-.pill.NG,.pill.NV{background:var(--bad);border-color:var(--bad);color:#fff}
+.pill.FT,.pill.NV{background:var(--bad);border-color:var(--bad);color:#fff}
 .take-detail{padding:0 12px 12px;display:flex;flex-direction:column;gap:8px}
 .take-detail dl{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;margin:0;font-size:13px}
 .take-detail dt{color:var(--muted)}
 .take-detail dd{margin:0;font-family:var(--f-mono);overflow-wrap:anywhere}
-.empty{padding:28px 16px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
-.empty b{display:block;color:var(--fg);font-family:var(--f-display);font-size:20px;letter-spacing:.04em;margin-bottom:4px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.grid4 label,.grid2 label,.form label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);min-width:0}
+.empty{padding:24px 16px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px;display:flex;flex-direction:column;gap:10px;align-items:center}
+.empty b{display:block;color:var(--fg);font-family:var(--f-display);font-size:20px;letter-spacing:.04em}
 
-/* Kit */
+/* Kit / listas */
 .unitcard{display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
 .unitcard input,.unitcard select{background:var(--surface)}
 .unitcard .u{font-family:var(--f-display);font-weight:700;font-size:18px;letter-spacing:.06em}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.grid2 label,.form label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);min-width:0}
-.form{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
 .form .full{grid-column:1/-1}
 .series{display:flex;flex-direction:column;gap:6px}
-.series-h{display:flex;gap:8px;align-items:baseline;font-size:13px}
+.series-h{display:flex;gap:8px;align-items:center;font-size:13px;flex-wrap:wrap}
 .series-h b{font-weight:600}
 .series-h span{color:var(--muted);font-size:12px}
-details.more summary{cursor:pointer;font-weight:600;font-size:14px;padding:4px 0;color:var(--accent)}
-details.more[open] summary{margin-bottom:8px}
+.series-h .btn{margin-left:auto}
+.list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.li{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--surface-2);min-width:0}
+.li:last-child{border-bottom:0}
+.li .t{flex:1;min-width:0;font-size:14px;overflow-wrap:anywhere}
+.li .t small{display:block;color:var(--muted);font-size:12px}
+.li.cur{box-shadow:inset 3px 0 0 var(--accent)}
+.x{width:36px;height:36px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:16px;flex:none}
+.tag{display:inline-flex;align-items:center;gap:6px;padding:4px 4px 4px 10px;border-radius:99px;border:1px solid var(--line);background:var(--surface-2);font-size:13px;font-family:var(--f-mono)}
+.tag button{width:26px;height:26px;border-radius:50%;border:0;background:transparent;color:var(--muted)}
 .note{font-size:12.5px;color:var(--muted);border-left:3px solid var(--warn);padding:4px 10px}
+.clock{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.clock .cell{background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+.clock .cell span{display:block;font-size:11.5px;color:var(--muted)}
+.clock .cell b{font-family:var(--f-mono);font-size:18px}
+.over{color:var(--bad);font-weight:600}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+
+/* Projetos */
+.proj{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.proj b{font-family:var(--f-display);font-size:22px;letter-spacing:.03em;font-weight:700}
+.proj span{font-size:12.5px;color:var(--muted)}
+.projrow{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:stretch}
+.hero{padding:6px 0 4px}
+.hero h1{font-family:var(--f-display);font-weight:700;font-size:34px;letter-spacing:.03em;margin:0;line-height:1}
+.hero p{color:var(--muted);font-size:14px;margin-top:4px}
+
+/* Folha de baixo (cadastros) */
+.sheet{position:fixed;inset:0;z-index:20;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center}
+.sheet-in{background:var(--surface);border:1px solid var(--line);border-radius:16px 16px 0 0;width:100%;max-width:640px;max-height:90vh;overflow:auto;
+  padding:14px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:12px}
+.sheet-h{display:flex;align-items:center;gap:10px}
+.sheet-h h2{font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.04em;margin:0}
+.sheet-h .x{margin-left:auto}
+.sheet-foot{display:flex;gap:8px;flex-wrap:wrap}
+.sheet-foot .btn{flex:1}
 
 /* Avisos */
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));z-index:8;
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));z-index:30;
   background:var(--fg);color:var(--bg);border-radius:10px;padding:10px 12px 10px 14px;display:flex;gap:12px;align-items:center;
   max-width:calc(100% - 32px);font-weight:600;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.3)}
 .toast button{border:0;background:transparent;color:var(--accent);font-weight:700;font-size:14px;padding:4px}
-.modal{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;
+.modal{position:fixed;inset:0;z-index:25;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center;
   padding:16px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .modal-in{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;width:100%;max-width:640px;display:flex;flex-direction:column;gap:10px;max-height:85vh}
 .modal textarea{width:100%;min-height:240px;flex:1;font-family:var(--f-mono);font-size:12px;background:var(--surface-2);color:var(--fg);border:1px solid var(--line);border-radius:9px;padding:10px;resize:vertical}
@@ -215,121 +266,142 @@ details.more[open] summary{margin-bottom:8px}
 </head>
 <body>
 
-<header class="top"><div class="wrap top-in">
-  <div class="units" id="units"></div>
-  <div class="reel" id="reel"></div>
-  <div class="sync" id="sync"><span class="dot"></span><span>Carregando…</span></div>
-</div></header>
+<header class="top"><div class="wrap top-in" id="topIn"></div></header>
 
 <main class="wrap" id="view"></main>
 
-<div class="dock"><div class="wrap">
+<div class="dock" id="dock"><div class="wrap">
   <button type="button" class="reg" id="regBtn" data-act="register">Registrar</button>
   <nav class="tabs" aria-label="Seções">
     <button type="button" data-act="tab" data-v="take">Take</button>
     <button type="button" data-act="tab" data-v="kit">Kit</button>
     <button type="button" data-act="tab" data-v="boletim">Boletim</button>
+    <button type="button" data-act="tab" data-v="projeto">Projeto</button>
   </nav>
 </div></div>
 
+<div class="sheet" id="sheet" hidden><div class="sheet-in" id="sheetIn" role="dialog" aria-modal="true"></div></div>
 <div class="toast" id="toast" hidden><span id="toastMsg"></span><button type="button" data-act="undo" id="toastUndo">Desfazer</button></div>
 <div class="modal" id="modal" hidden><div class="modal-in">
   <div class="blk-h"><span class="lbl" id="modalTitle">Arquivo</span><button type="button" class="btn sm" data-act="closeModal" style="margin-left:auto">Fechar</button></div>
-  <p class="hint" style="margin:0">O download não está disponível aqui. Copie o texto e salve como arquivo com o nome acima.</p>
+  <p class="hint">O download não está disponível aqui. Copie o texto e salve como arquivo com o nome acima.</p>
   <textarea id="modalText" readonly></textarea>
   <button type="button" class="btn pri" data-act="copyModal">Copiar texto</button>
 </div></div>
-
 <input type="file" id="restoreFile" accept=".json,application/json" hidden>
 
 <script>
-/* ===================== Catálogo (exemplo: ARRI + DZOFilm) ===================== */
+/* ===================== Catálogo de câmeras (ARRI). Tudo editável depois de cadastrado. ===================== */
 const EI_ARRI=[160,200,250,320,400,500,640,800,1000,1280,1600,2000,2560,3200];
-const CODECS_ARRI=["ARRIRAW","ProRes 4444 XQ","ProRes 4444","ProRes 422 HQ"];
-const CAMERAS=[
-  {id:"arri-alexa-35",brand:"ARRI",name:"ALEXA 35",sensor:"Super 35 4.6K",ei:[...EI_ARRI,4000,5120,6400],base:800,nd:[0.6,1.2,1.8],sh:"deg",isoLabel:"EI",codecs:CODECS_ARRI},
-  {id:"arri-alexa-mini-lf",brand:"ARRI",name:"ALEXA Mini LF",sensor:"Large Format",ei:EI_ARRI,base:800,nd:[0.6,1.2,1.8],sh:"deg",isoLabel:"EI",codecs:CODECS_ARRI},
-  {id:"arri-alexa-lf",brand:"ARRI",name:"ALEXA LF",sensor:"Large Format",ei:EI_ARRI,base:800,nd:[0.6,1.2,1.8],sh:"deg",isoLabel:"EI",codecs:CODECS_ARRI},
-  {id:"arri-alexa-mini",brand:"ARRI",name:"ALEXA Mini",sensor:"Super 35",ei:EI_ARRI,base:800,nd:[0.6,1.2,2.1],sh:"deg",isoLabel:"EI",codecs:CODECS_ARRI},
-  {id:"arri-amira",brand:"ARRI",name:"AMIRA",sensor:"Super 35",ei:EI_ARRI,base:800,nd:[0.6,1.2,2.1],sh:"deg",isoLabel:"EI",codecs:CODECS_ARRI},
-  {id:"arri-alexa-65",brand:"ARRI",name:"ALEXA 65",sensor:"65 mm",ei:EI_ARRI,base:800,nd:[],sh:"deg",isoLabel:"EI",codecs:["ARRIRAW"]},
-];
-function primes(key,series,fmt,list){return list.map(([f,t,tag])=>({id:`dzo-${key}-${f}`,brand:"DZOFilm",short:"DZO",series,seriesShort:series.replace(/ (Prime|Zoom)$/,""),fmt,focal:f,maxT:t,tag:tag||"",zoom:false}))}
-function zooms(key,series,fmt,list){return list.map(([a,b,t])=>({id:`dzo-${key}-${a}-${b}`,brand:"DZOFilm",short:"DZO",series,seriesShort:series.replace(/ (Prime|Zoom)$/,""),fmt,focalMin:a,focalMax:b,maxT:t,zoom:true}))}
-const LENSES=[
-  ...primes("vespid","Vespid Prime","FF",[[12,2.8],[16,2.8],[21,2.1],[25,2.1],[35,2.1],[40,2.1],[50,2.1],[75,2.1],[90,2.8,"Macro"],[100,2.1],[125,2.1]]),
-  ...primes("arles","Arles Prime","FF",[[25,1.4],[35,1.4],[40,1.4],[50,1.4],[75,1.4],[100,1.4]]),
-  ...primes("gnosis","Gnosis Macro","FF",[[24,2.8],[32,2.8],[65,2.8],[90,2.8]]),
-  ...zooms("catta","Catta Zoom","FF",[[18,35,2.9],[35,80,2.9],[70,135,2.9]]),
-  ...zooms("pictor","Pictor Zoom","S35",[[14,30,2.8],[20,55,2.8],[50,125,2.8]]),
+const EI_A35=[...EI_ARRI,4000,5120,6400];
+const PR_HI=["ProRes 4444 XQ","ProRes 4444","ProRes 422 HQ"];
+const F_A35=["4.6K 3:2 Open Gate (4608×3164)","4.6K 16:9 (4608×2592)","4.6K 16:9 → 4K (4096×2304)","4K 16:9 (4096×2304)","4K 16:9 → UHD (3840×2160)","4K 16:9 → 2K (2048×1152)","4K 16:9 → HD (1920×1080)","4K 2:1 (4096×2048)","3.8K 16:9 UHD (3840×2160)","3.3K 6:5 (3328×2790)","3.3K 6:5 Ana. 2x → 3.8K 2.39:1 (3840×1608)","3K 1:1 (3072×3072)","3K 1:1 Ana. 2x → 3.8K 2:1 (3840×1920)","2.7K 8:9 Ana. 2x → UHD (3840×2160)","2K 16:9 S16 (2048×1152)"];
+const F_MLF=["4.5K LF Open Gate (4448×3096)","4.5K LF 2.39:1 (4448×1856)","4.3K LF 16:9 → UHD (3840×2160)","3.8K LF 16:9 UHD (3840×2160)","3.8K LF 16:9 → 2K (2048×1152)","3.8K LF 16:9 → HD (1920×1080)","2.8K LF 1:1","3.4K S35 3:2 (3424×2202)","3.2K S35 16:9 (3200×1800)","2.8K S35 4:3 (2880×2160)"];
+const F_LF=["4.5K LF Open Gate (4448×3096)","4.5K LF 2.39:1 (4448×1856)","3.8K LF 16:9 UHD (3840×2160)","3.8K LF 16:9 → 2K (2048×1152)","3.8K LF 16:9 → HD (1920×1080)"];
+const F_MINI=["3.4K Open Gate (3424×2202)","2.8K 16:9 (2880×1620)","2.8K 4:3 (2880×2160)","3.2K 16:9 (3200×1800)","4K UHD 16:9 (3840×2160)","2K 16:9 (2048×1152)","HD 16:9 (1920×1080)","HD 16:9 Ana. 2x","S16 HD (1920×1080)"];
+const F_AMIRA=["2.8K 16:9 (2880×1620)","4K UHD (3840×2160)","3.2K (3200×1800)","2K (2048×1152)","HD (1920×1080)","S16 HD (1920×1080)"];
+const F_A65=["6.5K Open Gate (6560×3100)","5.1K 16:9 (5120×2880)"];
+const CATALOG=[
+  {catalogId:"arri-alexa-35-xtreme",brand:"ARRI",name:"ALEXA 35 Xtreme",isoLabel:"EI",ei:EI_A35,base:800,nd:[0.6,1.2,1.8],sh:"deg",codecs:["ARRIRAW","ARRICORE",...PR_HI],formats:F_A35},
+  {catalogId:"arri-alexa-35",brand:"ARRI",name:"ALEXA 35",isoLabel:"EI",ei:EI_A35,base:800,nd:[0.6,1.2,1.8],sh:"deg",codecs:["ARRIRAW","ARRICORE",...PR_HI],formats:F_A35},
+  {catalogId:"arri-alexa-mini-lf",brand:"ARRI",name:"ALEXA Mini LF",isoLabel:"EI",ei:EI_ARRI,base:800,nd:[0.6,1.2,1.8],sh:"deg",codecs:["ARRIRAW",...PR_HI],formats:F_MLF},
+  {catalogId:"arri-alexa-lf",brand:"ARRI",name:"ALEXA LF",isoLabel:"EI",ei:EI_ARRI,base:800,nd:[0.6,1.2,1.8],sh:"deg",codecs:["ARRIRAW",...PR_HI],formats:F_LF},
+  {catalogId:"arri-alexa-mini",brand:"ARRI",name:"ALEXA Mini",isoLabel:"EI",ei:EI_ARRI,base:800,nd:[0.6,1.2,2.1],sh:"deg",codecs:["ARRIRAW",...PR_HI,"ProRes 422","ProRes 422 LT"],formats:F_MINI},
+  {catalogId:"arri-amira",brand:"ARRI",name:"AMIRA",isoLabel:"EI",ei:EI_ARRI,base:800,nd:[0.6,1.2,2.1],sh:"deg",codecs:["ARRIRAW",...PR_HI,"ProRes 422","ProRes 422 LT","MPEG-2 HD 422"],formats:F_AMIRA},
+  {catalogId:"arri-alexa-65",brand:"ARRI",name:"ALEXA 65",isoLabel:"EI",ei:EI_ARRI,base:800,nd:[],sh:"deg",codecs:["ARRIRAW"],formats:F_A65},
 ];
 const ND_VALS=["0.3","0.6","0.9","1.2","1.5","1.8","2.1"];
-const FILTERS=[
-  ...ND_VALS.map(v=>({id:`f-nd-${v}`,group:"ND",label:v,code:`ND${v}`})),
-  ...ND_VALS.map(v=>({id:`f-irnd-${v}`,group:"IRND",label:v,code:`IRND${v}`})),
-  ...["1/8","1/4","1/2","1"].map(v=>({id:`f-bpm-${v}`,group:"Black Pro-Mist",label:v,code:`BPM${v}`})),
-  ...["1/8","1/4","1/2"].map(v=>({id:`f-hbm-${v}`,group:"Hollywood Black Magic",label:v,code:`HBM${v}`})),
-  ...["1","2"].map(v=>({id:`f-gg-${v}`,group:"Glimmerglass",label:v,code:`GG${v}`})),
-  {id:"f-pola",group:"Polarizador",label:"Pola",code:"Pola"},
-  ...["+1/2","+1","+2"].map(v=>({id:`f-diop-${v}`,group:"Dioptria",label:v,code:`Diop${v}`})),
+const FILTER_PRESETS=[
+  ...ND_VALS.map(v=>({group:"ND",label:v,code:`ND${v}`})),
+  ...ND_VALS.map(v=>({group:"IRND",label:v,code:`IRND${v}`})),
+  ...["1/8","1/4","1/2","1"].map(v=>({group:"Black Pro-Mist",label:v,code:`BPM${v}`})),
+  ...["1/8","1/4","1/2"].map(v=>({group:"Hollywood Black Magic",label:v,code:`HBM${v}`})),
+  ...["1","2"].map(v=>({group:"Glimmerglass",label:v,code:`GG${v}`})),
+  {group:"Polarizador",label:"Pola",code:"Pola"},
+  ...["+1/2","+1","+2"].map(v=>({group:"Dioptria",label:v,code:`Diop${v}`})),
 ];
-const T_THIRDS=[1,1.1,1.2,1.4,1.6,1.8,2,2.2,2.5,2.8,3.2,3.5,4,4.5,5,5.6,6.3,7.1,8,9,10,11,13,14,16,18,20,22];
+const IRIS=[0.7,0.8,0.9,1,1.1,1.2,1.4,1.6,1.8,2,2.2,2.5,2.8,3.2,3.5,4,4.5,5,5.6,6.3,7.1,8,9,10,11,13,14,16,18,20,22];
 const SH_DEG=[11.2,22.5,45,90,144,172.8,180,216,270,360];
 const SH_FRAC=[24,25,30,48,50,60,96,100,120,125,250,500,1000,2000];
-const FPS=[23.976,24,25,29.97,30,48,50,60,72,96,100,120];
+const FPS=[23.976,24,25,29.97,30,48,50,59.94,60,72,96,100,120];
 const WB=[2800,3200,3600,4300,5000,5600,6500,7500];
-const ZOOM_MARKS=[14,16,18,20,21,24,25,28,30,32,35,40,45,50,55,60,65,70,75,80,85,90,100,110,120,125,135];
-const AVAL=["Boa","OK","NV","NG"];
+const ZOOM_MARKS=[14,16,18,20,21,24,25,28,30,32,35,40,45,50,55,60,65,70,75,80,85,90,100,110,120,125,135,150,180,200];
+const AVAL=["Boa","OK","NV","False Take"];
+const TEAM=[["diretor","Diretor(a)"],["df","Diretor(a) de Fotografia"],["ac1","1º Assistente de Câmera"],["ac2","2º Assistente de Câmera"],["va","Video Assist"],["logger","Logger"]];
+const TEAM_OPT=[["dit","D.I.T"],["drone","Drone"]];
 
 /* ===================== Utilidades ===================== */
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const pad3=n=>String(n).padStart(3,"0");
 const clone=o=>JSON.parse(JSON.stringify(o));
-const fmtNum=x=>String(Math.round(x*10)/10);
+const fmtNum=x=>String(Math.round(x*100)/100);
+const num=v=>{const n=parseFloat(String(v??"").trim().replace(",","."));return isFinite(n)?n:NaN};
+const fpsLabel=v=>({23.976:"23.98",29.97:"29.97",59.94:"59.94",47.952:"47.95"})[v]||String(v);
 function today(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
-const brDate=s=>{const [y,m,d]=String(s||"").split("-");return d?`${d}/${m}/${y}`:s};
+const brDate=s=>{const [y,m,d]=String(s||"").split("-");return d?`${d}/${m}/${y}`:(s||"")};
+const hhmm=ts=>ts?new Date(ts).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):"";
 const newId=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);
+const dur=ms=>{const m=Math.max(0,Math.round(ms/60000));return `${Math.floor(m/60)}h${String(m%60).padStart(2,"0")}`};
+function nextRoll(r){const m=String(r).match(/^(.*?)(\d+)$/);return m?m[1]+String(Number(m[2])+1).padStart(m[2].length,"0"):r+"2"}
+const splitList=s=>String(s||"").split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);
+const numList=s=>[...new Set(String(s||"").split(/[,;\s]+/).map(num).filter(x=>x>0))].sort((a,b)=>a-b);
 
 /* ===================== Estado ===================== */
-let S=null, view="take", viewDay=null, openTake=null, armed=null, lastUndo=null;
-const allCams=()=>CAMERAS.concat(S.cfg.custom.cameras);
-const allLenses=()=>LENSES.concat(S.cfg.custom.lenses);
-const allFilters=()=>FILTERS.concat(S.cfg.custom.filters);
-const cam=id=>allCams().find(c=>c.id===id);
-const lens=id=>allLenses().find(l=>l.id===id);
-const filt=id=>allFilters().find(f=>f.id===id);
-const U=()=>S.cfg.units[S.cfg.active];
-const day=()=>S.days[S.cfg.diariaKey];
+let store=null, view="home", viewDay=null, openTake=null, armed=null, lastUndo=null, sheet=null, pendingRestore=null, installEvt=null, localOk=true;
+const P=()=>store.projects[store.activeId]||null;
+const U=()=>{const p=P();return p&&p.units[p.active]||null};
+const allLensSorted=p=>p.lenses.slice().sort((a,b)=>a.series.localeCompare(b.series)||(a.zoom?a.focalMin:a.focal)-(b.zoom?b.focalMin:b.focal));
+const lensById=(p,id)=>p.lenses.find(l=>l.id===id);
+const filtById=(p,id)=>p.filters.find(f=>f.id===id);
+const nextLetter=p=>"ABCDEFGH".split("").find(l=>!p.unitOrder.includes(l));
 
-function newUnit(letter,camId){
-  const C=cam(camId)||CAMERAS[0];
-  const lensId=(S&&S.cfg.kitLenses[0])||"dzo-vespid-35";
-  const L=lens(lensId);
-  return {camId:C.id,codec:C.codecs[0],roll:letter+"001",clip:1,slate:{cena:"1",plano:"1",take:1},
-    cur:{lensId,focal:L&&L.zoom?L.focalMin:null,t:Math.max(2.8,L?L.maxT:2.8),shMode:C.sh,shDeg:180,shFrac:50,fps:24,iso:C.base,wb:5600,ndInt:null,filters:[],aval:"",obs:""}};
-}
-function fresh(){
+function freshStore(){return {v:2,projects:{},order:[],activeId:null,lastBackup:0}}
+function newProject(name,produtora){
   const key="d1-"+today();
-  S={cfg:{v:1,updatedAt:0,diariaKey:key,diarias:[{key,n:1,date:today()}],producao:"",units:{},unitOrder:["A"],active:"A",
-      kitLenses:["dzo-vespid-25","dzo-vespid-35","dzo-vespid-50","dzo-vespid-75","dzo-vespid-100","dzo-catta-35-80"],
-      kitFilters:["f-nd-0.3","f-nd-0.6","f-nd-0.9","f-nd-1.2","f-pola","f-bpm-1/8","f-bpm-1/4"],
-      custom:{cameras:[],lenses:[],filters:[]}},
-     days:{[key]:{key,updatedAt:0,takes:[]}}};
-  S.cfg.units.A=newUnit("A","arri-alexa-mini-lf");
-  return S;
+  return {id:newId(),name,produtora:produtora||"",createdAt:Date.now(),updatedAt:Date.now(),
+    team:{diretor:"",df:"",ac1:"",ac2:"",va:"",logger:"",dit:null,drone:null,extras:[]},
+    units:{},unitOrder:[],active:null,lenses:[],filters:[],
+    diarias:[{key,n:1,date:today(),start:null,end:null}],diariaKey:key,days:{[key]:{takes:[],cards:[]}},
+    opts:{measures:false}};
 }
+function newUnit(letter,model){
+  return {model:clone(model),codec:model.codecs[0]||"",format:model.formats[0]||"",roll:letter+"001",clip:1,
+    slate:{cena:"1",plano:"1",take:1},
+    cur:{lensId:null,focal:null,iris:2.8,shMode:model.sh||"deg",shDeg:180,shFrac:50,fps:24,iso:model.base||(model.ei[0]||800),wb:5600,ndInt:null,filters:[],aval:"",obs:"",dist:"",alt:""}};
+}
+function ensureDiaria(p){
+  if(!p.diarias.length){const key="d1-"+today()+"-"+newId().slice(0,3);p.diarias.push({key,n:1,date:today(),start:null,end:null});p.diariaKey=key}
+  if(!p.diarias.find(d=>d.key===p.diariaKey)) p.diariaKey=p.diarias[p.diarias.length-1].key;
+  p.diarias.forEach(d=>{if(!p.days[d.key])p.days[d.key]={takes:[],cards:[]}});
+}
+const curDiaria=p=>p.diarias.find(d=>d.key===p.diariaKey);
 
 /* ===================== Persistência: só no aparelho, com backup manual ===================== */
-const LS="boletim-camera-v1";
-let localOk=true, pendingRestore=null, installEvt=null;
-function loadLocal(){try{const r=localStorage.getItem(LS);if(r){const o=JSON.parse(r);if(o&&o.cfg&&o.days)return o}}catch(e){}return null}
-function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(S));localOk=true}catch(e){localOk=false}}
-function commit(dayKey){
-  S.cfg.updatedAt=Date.now();
-  if(dayKey&&S.days[dayKey]) S.days[dayKey].updatedAt=Date.now();
-  saveLocal(); renderSync();
+const LS2="boletim-camera-v2", LS1="boletim-camera-v1";
+function migrateV1(old){
+  const s=freshStore(); if(!old||!old.cfg||!old.days) return s;
+  const c=old.cfg, p=newProject(c.producao||"Projeto importado","");
+  p.diarias=(c.diarias||[]).map(d=>({key:d.key,n:d.n,date:d.date,start:null,end:null}));
+  p.diariaKey=c.diariaKey; p.days={};
+  Object.entries(old.days).forEach(([k,d])=>{p.days[k]={takes:(d.takes||[]).map(t=>({...t,iris:t.iris||("T"+t.t),format:t.format||"",dist:"",alt:""})),cards:[]}});
+  (c.unitOrder||[]).forEach(l=>{
+    const ou=c.units[l]; if(!ou) return;
+    const model=CATALOG.find(m=>m.catalogId===ou.camId)||CATALOG[2];
+    const u=newUnit(l,model); u.roll=ou.roll; u.clip=ou.clip; u.slate=clone(ou.slate); u.codec=ou.codec||u.codec;
+    p.units[l]=u; p.unitOrder.push(l);
+  });
+  p.active=p.unitOrder[0]||null; ensureDiaria(p);
+  s.projects[p.id]=p; s.order.push(p.id); s.lastBackup=c.lastBackup||0;
+  return s;
 }
+function load(){
+  try{const r=localStorage.getItem(LS2); if(r){const o=JSON.parse(r); if(o&&o.v===2&&o.projects) return o}}catch(e){}
+  try{const r=localStorage.getItem(LS1); if(r){const o=JSON.parse(r); if(o&&o.cfg&&o.cfg.updatedAt) return migrateV1(o)}}catch(e){}
+  return freshStore();
+}
+function save(){try{localStorage.setItem(LS2,JSON.stringify(store));localOk=true}catch(e){localOk=false}}
+function commit(){const p=P(); if(p)p.updatedAt=Date.now(); save(); renderTop()}
 async function askPersist(){try{if(navigator.storage&&navigator.storage.persist&&!(await navigator.storage.persisted()))await navigator.storage.persist()}catch(e){}}
 const isStandalone=()=>{try{return matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}catch(e){return false}};
 const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
@@ -338,41 +410,45 @@ function ago(ts){
   const m=Math.round((Date.now()-ts)/60000); if(m<1) return "agora"; if(m<60) return `há ${m} min`;
   const h=Math.round(m/60); if(h<24) return `há ${h} h`; const d=Math.round(h/24); return `há ${d} ${d===1?"dia":"dias"}`;
 }
-function lastTakeTs(){let t=0;Object.values(S.days).forEach(d=>d.takes.forEach(x=>{if(x.ts>t)t=x.ts}));return t}
-const needsBackup=()=>{const lt=lastTakeTs();return lt>0&&(!S.cfg.lastBackup||S.cfg.lastBackup<lt)};
-const backupData=()=>JSON.stringify({app:"boletim-camera",v:1,exportedAt:Date.now(),data:S});
+function lastTakeTs(){let t=0;Object.values(store.projects).forEach(p=>Object.values(p.days).forEach(d=>d.takes.forEach(x=>{if(x.ts>t)t=x.ts})));return t}
+const needsBackup=()=>{const lt=lastTakeTs();return lt>0&&(!store.lastBackup||store.lastBackup<lt)};
+const backupData=()=>JSON.stringify({app:"boletim-camera",v:2,exportedAt:Date.now(),data:store});
 function parseBackup(text){
-  const o=JSON.parse(text), d=o&&o.app==="boletim-camera"?o.data:o;
-  if(!d||!d.cfg||!d.days||!d.cfg.units||!d.cfg.diarias||!d.cfg.unitOrder) throw new Error("formato");
-  return {data:d,exportedAt:o.exportedAt||0};
+  const o=JSON.parse(text);
+  if(o&&o.app==="boletim-camera"&&o.v===2&&o.data&&o.data.projects) return {data:o.data,exportedAt:o.exportedAt||0};
+  const d1=o&&o.app==="boletim-camera"?o.data:o;
+  if(d1&&d1.cfg&&d1.days) {const s=migrateV1({...d1,cfg:{...d1.cfg,updatedAt:1}}); return {data:s,exportedAt:o.exportedAt||0}}
+  throw new Error("formato");
 }
-window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=e;if(view==="kit")render()});
-window.addEventListener("appinstalled",()=>{installEvt=null;toast("App instalado");if(view==="kit")render()});
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=e;if(view==="home")render()});
+window.addEventListener("appinstalled",()=>{installEvt=null;toast("App instalado");if(view==="home")render()});
 
-/* ===================== Boletim: montagem do texto ===================== */
-const tLabel=t=>"T"+t;
+/* ===================== Íris, lente e linha do boletim ===================== */
+const stopOf=L=>(L&&L.stop)||"T";
+const irisText=(stop,n)=>stop+fmtNum(n);
 function lensLabel(L,focal){
-  if(!L) return "—";
-  const name=[L.short,L.seriesShort].filter(Boolean).join(" ");
-  if(L.zoom) return `${name} ${L.focalMin}-${L.focalMax}mm @${focal||L.focalMin}mm`;
-  return `${name} ${L.focal}mm`;
+  if(!L) return "sem lente";
+  if(L.zoom) return `${L.series} ${fmtNum(L.focalMin)}-${fmtNum(L.focalMax)}mm @${fmtNum(focal||L.focalMin)}mm`;
+  return `${L.series} ${fmtNum(L.focal)}mm`;
 }
 function shText(c){return c.shMode==="deg"?fmtNum(c.shDeg)+"°":"1/"+c.shFrac}
 function shEquiv(c){
   const fps=Number(c.fps)||24;
-  if(c.shMode==="deg") return "≈ 1/"+Math.round(360*fps/c.shDeg)+" s a "+fps+" fps";
-  return "≈ "+fmtNum(360*fps/c.shFrac)+"° a "+fps+" fps";
+  if(c.shMode==="deg") return "≈ 1/"+Math.round(360*fps/c.shDeg)+" s a "+fpsLabel(fps)+" fps";
+  return "≈ "+fmtNum(360*fps/c.shFrac)+"° a "+fpsLabel(fps)+" fps";
 }
-function snapshot(letter){
-  const u=S.cfg.units[letter], C=cam(u.camId), c=u.cur, L=lens(c.lensId);
+function snapshot(p,letter){
+  const u=p.units[letter], m=u.model, c=u.cur, L=lensById(p,c.lensId);
   const filters=[]; if(c.ndInt) filters.push(`ND${c.ndInt}(int)`);
-  c.filters.forEach(id=>{const F=filt(id); if(F) filters.push(F.code)});
-  return {id:newId(),unit:letter,cam:C?C.name:"—",codec:u.codec||"",roll:u.roll,clip:u.clip,
+  c.filters.forEach(id=>{const F=filtById(p,id); if(F) filters.push(F.code)});
+  const meas=p.opts.measures;
+  return {id:newId(),unit:letter,cam:[m.brand,m.name].filter(Boolean).join(" "),codec:u.codec||"",format:u.format||"",roll:u.roll,clip:u.clip,
     cena:u.slate.cena,plano:u.slate.plano,take:u.slate.take,lens:lensLabel(L,c.focal),
-    t:c.t,sh:shText(c),shEq:shEquiv(c),fps:c.fps,isoLabel:(C&&C.isoLabel)||"ISO",iso:c.iso,wb:c.wb,
-    filters,aval:c.aval,obs:(c.obs||"").trim(),ts:Date.now()};
+    iris:irisText(stopOf(L),c.iris),sh:shText(c),shEq:shEquiv(c),fps:c.fps,isoLabel:m.isoLabel||"ISO",iso:c.iso,wb:c.wb,
+    filters,dist:meas?String(c.dist||"").trim():"",alt:meas?String(c.alt||"").trim():"",aval:c.aval,obs:(c.obs||"").trim(),ts:Date.now()};
 }
-const ajustes=t=>[tLabel(t.t),t.sh,t.fps+"fps",t.isoLabel+t.iso,t.wb+"K",...t.filters].join(" ");
+const tIris=t=>t.iris||("T"+t.t);
+const ajustes=t=>[tIris(t),t.sh,fpsLabel(t.fps)+"fps",t.isoLabel+t.iso,t.wb+"K",...(t.filters||[]),t.dist?`Dist${t.dist}m`:"",t.alt?`Alt${t.alt}m`:""].filter(Boolean).join(" ");
 const lensLine=t=>`Lente ${t.lens} ${ajustes(t)}`;
 function clipLine(t){
   const tok=s=>String(s||"").replace(/\s+/g,"")||"-";
@@ -383,17 +459,34 @@ function clipLine(t){
 }
 function rollTxt(roll,takes){
   const lines=[`CARD #${roll}`]; let last="";
-  takes.slice().sort((a,b)=>a.clip-b.clip||a.ts-b.ts).forEach(t=>{
-    const ll=lensLine(t); if(ll!==last){lines.push(ll);last=ll}
-    lines.push(clipLine(t));
-  });
+  takes.slice().sort((a,b)=>a.clip-b.clip||a.ts-b.ts).forEach(t=>{const ll=lensLine(t); if(ll!==last){lines.push(ll);last=ll} lines.push(clipLine(t))});
   return lines.join("\r\n")+"\r\n";
 }
-function dayCsv(d,meta){
-  const cols=["Diária","Data","Câmera","Modelo","Codec","Rolo","Clipe","Cena","Plano","Take","Lente","T","Shutter","Shutter equiv.","FPS","ISO/EI","WB","Filtros","Avaliação","Obs","Hora"];
+function dayCsv(p,d,meta){
+  const cols=["Projeto","Diária","Data","Câmera","Modelo","Codec","Formato","Cartão","Clipe","Cena","Plano","Take","Lente","Íris","Shutter","Shutter equiv.","FPS","ISO/EI","WB","Filtros","Distância (m)","Altura (m)","Avaliação","Obs","Hora"];
   const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
-  const rows=d.takes.map(t=>[meta.n,brDate(meta.date),t.unit,t.cam,t.codec,t.roll,"C"+pad3(t.clip),t.cena,t.plano,t.take,t.lens,tLabel(t.t),t.sh,t.shEq,t.fps,t.isoLabel+" "+t.iso,t.wb+"K",t.filters.join(" + "),t.aval,t.obs,new Date(t.ts).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})]);
+  const rows=d.takes.map(t=>[p.name,meta.n,brDate(meta.date),t.unit,t.cam,t.codec,t.format,t.roll,"C"+pad3(t.clip),t.cena,t.plano,t.take,t.lens,tIris(t),t.sh,t.shEq,fpsLabel(t.fps),t.isoLabel+" "+t.iso,t.wb+"K",(t.filters||[]).join(" + "),t.dist||"",t.alt||"",t.aval,t.obs,hhmm(t.ts)]);
   return "﻿"+[cols,...rows].map(r=>r.map(q).join(";")).join("\r\n")+"\r\n";
+}
+function dayResumo(p,d,meta){
+  const L=[]; const tm=p.team;
+  L.push("BOLETIM DE CÂMERA — RESUMO DA DIÁRIA","");
+  L.push(`Projeto: ${p.name}`); if(p.produtora) L.push(`Produtora: ${p.produtora}`);
+  L.push(`Diária ${meta.n} — ${brDate(meta.date)}`);
+  if(meta.start){const end=meta.end||null; L.push(`Início: ${hhmm(meta.start)}   Fim: ${end?hhmm(end):"em andamento"}   Duração: ${dur((end||Date.now())-meta.start)}${(end||Date.now())-meta.start>12*3600000?"  (passou de 12h)":""}`)}
+  L.push("","EQUIPE");
+  TEAM.forEach(([k,l])=>{if(tm[k]) L.push(`${l}: ${tm[k]}`)});
+  TEAM_OPT.forEach(([k,l])=>{if(tm[k]) L.push(`${l}: ${tm[k]}`)});
+  (tm.extras||[]).forEach(x=>{if(x.role||x.name) L.push(`${x.role||"Função"}: ${x.name}`)});
+  L.push("","CÂMERAS E CARTÕES");
+  const byRoll={}; d.takes.forEach(t=>{const k=t.unit+"|"+t.roll;(byRoll[k]=byRoll[k]||[]).push(t)});
+  Object.entries(byRoll).forEach(([k,ts])=>{
+    const [u,roll]=k.split("|"); const cl=ts.map(t=>t.clip).sort((a,b)=>a-b);
+    L.push(`CAM ${u} · ${ts[0].cam} · ${ts[0].codec}${ts[0].format?" · "+ts[0].format:""} — Cartão ${roll}: C${pad3(cl[0])} a C${pad3(cl[cl.length-1])} (${ts.length} ${ts.length===1?"take":"takes"})`);
+  });
+  const cnt={}; d.takes.forEach(t=>{const a=t.aval||"Sem avaliação";cnt[a]=(cnt[a]||0)+1});
+  L.push("",`TAKES: ${d.takes.length}`+(d.takes.length?" ("+Object.entries(cnt).map(([a,n])=>`${a} ${n}`).join(" · ")+")":""));
+  return L.join("\r\n")+"\r\n";
 }
 
 /* ===================== Render ===================== */
@@ -401,61 +494,116 @@ function chip(act,f,v,label,pressed,extra=""){
   return `<button type="button" class="chip ${extra}" data-act="${act}" data-f="${esc(f)}" data-v="${esc(v)}" aria-pressed="${pressed?"true":"false"}">${label}</button>`;
 }
 function render(){
-  if(!S.days[S.cfg.diariaKey]) S.days[S.cfg.diariaKey]={key:S.cfg.diariaKey,updatedAt:0,takes:[]};
-  if(!S.cfg.units[S.cfg.active]) S.cfg.active=S.cfg.unitOrder[0];
+  const p=P(); if(!p&&view!=="home") view="home";
+  if(p){ensureDiaria(p); if(!p.units[p.active]) p.active=p.unitOrder[0]||null}
   const pos={}; document.querySelectorAll(".strip[id]").forEach(s=>pos[s.id]=s.scrollLeft);
-  renderHeader();
-  const v=$("#view");
-  v.innerHTML=view==="take"?viewTake():view==="kit"?viewKit():viewBoletim();
+  document.body.classList.toggle("home",view==="home");
+  renderTop();
+  $("#view").innerHTML=view==="home"?viewHome():view==="take"?viewTake():view==="kit"?viewKit():view==="boletim"?viewBoletim():viewProjeto();
+  $("#dock").hidden=view==="home";
   document.querySelectorAll(".tabs button").forEach(b=>{if(b.dataset.v===view)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
-  $("#regBtn").hidden=view!=="take";
+  const u=U(); $("#regBtn").hidden=view!=="take"||!u;
+  if(u) $("#regBtn").textContent=`Registrar ${u.roll}C${pad3(u.clip)}`;
   document.querySelectorAll(".strip[id]").forEach(s=>{
     if(pos[s.id]!=null){s.scrollLeft=pos[s.id];return}
-    const on=s.querySelector('[aria-pressed="true"]');
-    if(on) s.scrollLeft=on.offsetLeft-s.clientWidth/2+on.offsetWidth/2;
+    const on=s.querySelector('[aria-pressed="true"]'); if(on) s.scrollLeft=on.offsetLeft-s.clientWidth/2+on.offsetWidth/2;
   });
-  updateDock(); renderSync();
+  renderSheet();
 }
-function renderHeader(){
-  $("#units").innerHTML=S.cfg.unitOrder.map(k=>`<button type="button" class="unit" data-act="unit" data-v="${k}" aria-pressed="${k===S.cfg.active}">${k}</button>`).join("");
-  const u=U(), C=cam(u.camId);
-  $("#reel").innerHTML=`${esc(u.roll)}<span style="color:var(--muted)">C</span>${pad3(u.clip)}<small>${esc(C?C.name:"")}</small>`;
+function renderTop(){
+  const p=P();
+  if(view==="home"||!p){$("#topIn").innerHTML=`<span class="brand">Boletim de Câmera</span>${syncHTML("")}`;return}
+  const u=U(), d=curDiaria(p);
+  $("#topIn").innerHTML=`<button type="button" class="menu" data-act="home" aria-label="Projetos">☰</button>
+    <div class="units">${p.unitOrder.map(k=>`<button type="button" class="unit" data-act="unit" data-v="${k}" aria-pressed="${k===p.active}">${k}</button>`).join("")}</div>
+    ${u?`<div class="reel">${esc(u.roll)}<span style="color:var(--muted)">C</span>${pad3(u.clip)}<small>${esc(u.model.name)}</small></div>`:""}
+    ${syncHTML(`${p.name} · Diária ${d?d.n:"—"}`)}`;
 }
-function updateDock(){const u=U();$("#regBtn").textContent=`Registrar ${u.roll}C${pad3(u.clip)}`}
-function renderSync(){
-  const meta=curDiariaMeta();
-  let cls="ok", txt="Salvo neste aparelho";
-  if(!localOk){cls="bad";txt="Não está salvando — faça backup agora"}
-  else if(needsBackup()){cls="warn";txt=S.cfg.lastBackup?`Salvo no aparelho · backup ${ago(S.cfg.lastBackup)}`:"Salvo no aparelho · sem backup ainda"}
-  else if(S.cfg.lastBackup){txt=`Salvo no aparelho · backup ${ago(S.cfg.lastBackup)}`}
-  $("#sync").innerHTML=`<span class="dot ${cls}"></span><span>${esc(txt)} · Diária ${esc(meta.n)}</span>`;
+function syncHTML(prefix){
+  let cls="ok", txt="salvo no aparelho";
+  if(!localOk){cls="bad";txt="não está salvando — faça backup agora"}
+  else if(needsBackup()){cls="warn";txt=store.lastBackup?`backup ${ago(store.lastBackup)}`:"sem backup ainda"}
+  else if(store.lastBackup){txt=`backup ${ago(store.lastBackup)}`}
+  return `<div class="sync"><span class="dot ${cls}"></span><span>${esc(prefix?prefix+" · "+txt:txt)}</span></div>`;
 }
-const curDiariaMeta=()=>S.cfg.diarias.find(d=>d.key===S.cfg.diariaKey)||{n:"?",date:""};
 
+/* ---------- Início: projetos ---------- */
+function viewHome(){
+  const ids=store.order.filter(id=>store.projects[id]);
+  const list=ids.length?ids.slice().sort((a,b)=>store.projects[b].updatedAt-store.projects[a].updatedAt).map(id=>{
+    const p=store.projects[id]; const takes=Object.values(p.days).reduce((a,d)=>a+d.takes.length,0);
+    const del=armed==="delProj:"+id;
+    return `<div class="projrow">
+      <button type="button" class="proj" data-act="openProj" data-v="${esc(id)}"><b>${esc(p.name)}</b>
+        <span>${p.produtora?esc(p.produtora)+" · ":""}${p.diarias.length} ${p.diarias.length===1?"diária":"diárias"} · ${takes} takes · ${p.unitOrder.length} ${p.unitOrder.length===1?"câmera":"câmeras"}</span></button>
+      <button type="button" class="btn sm" data-act="sheet" data-v="renameProj" data-id="${esc(id)}">Renomear</button>
+      <button type="button" class="btn sm danger ${del?"armed":""}" data-act="delProj" data-v="${esc(id)}">${del?"Confirmar":"Excluir"}</button>
+    </div>`}).join(""):`<div class="empty"><b>Nenhum projeto ainda</b>Crie um projeto para cadastrar câmeras, lentes, filtros e a equipe.</div>`;
+  return `<div class="hero"><h1>Projetos</h1><p>Cada projeto tem o seu kit, a sua equipe e as suas diárias.</p></div>
+  <button type="button" class="btn pri full" data-act="sheet" data-v="newProj">+ Iniciar / criar projeto</button>
+  ${list}
+  ${installBlk()}
+  ${backupBlk()}`;
+}
+function installBlk(){
+  if(isStandalone()) return "";
+  const how=installEvt?`<button type="button" class="btn pri" data-act="install">Instalar app</button>`
+    :isIOS()?`<p class="hint">No Safari: toque em <b>Compartilhar</b> → <b>Adicionar à Tela de Início</b>.</p>`
+    :`<p class="hint">No Chrome: menu <b>⋮</b> → <b>Instalar app</b> (ou <b>Adicionar à tela inicial</b>).</p>`;
+  return `<section class="blk"><div class="blk-h"><span class="lbl">Instalar no celular</span></div>${how}<span class="hint">Instalado, o app abre em tela cheia e funciona sem internet.</span></section>`;
+}
+function backupBlk(){
+  const total=lastTakeTs()?Object.values(store.projects).reduce((a,p)=>a+Object.values(p.days).reduce((b,d)=>b+d.takes.length,0),0):0;
+  const pr=pendingRestore?`<div class="unitcard"><b>Restaurar ${esc(pendingRestore.name)}?</b>
+      <span class="hint">${pendingRestore.projects} ${pendingRestore.projects===1?"projeto":"projetos"} · ${pendingRestore.takes} takes${pendingRestore.exportedAt?` · backup de ${esc(new Date(pendingRestore.exportedAt).toLocaleString("pt-BR"))}`:""}. Isso <b>substitui tudo</b> o que está neste aparelho (${total} takes).</span>
+      <div class="row2"><button type="button" class="btn armed" data-act="restoreApply">Substituir pelos dados do backup</button><button type="button" class="btn" data-act="restoreCancel">Cancelar</button></div></div>`:"";
+  return `<section class="blk"><div class="blk-h"><span class="lbl">Backup</span><span class="val">${store.lastBackup?esc(ago(store.lastBackup)):"nunca"}</span></div>
+    <span class="hint">Os dados ficam só neste aparelho. O backup gera um arquivo com todos os projetos: mande para o Drive, iCloud ou WhatsApp.</span>
+    <div class="row2"><button type="button" class="btn pri" data-act="backup">Fazer backup</button><button type="button" class="btn" data-act="restorePick">Restaurar backup</button></div>
+    ${pr}</section>`;
+}
+function backupNudge(){
+  if(!needsBackup()) return "";
+  return `<div class="note row2" style="border-left-color:var(--accent)"><span>Há takes sem backup${store.lastBackup?` (último ${esc(ago(store.lastBackup))})`:""}.</span><button type="button" class="btn sm pri" style="margin-left:auto" data-act="backup">Fazer backup</button></div>`;
+}
+
+/* ---------- Take ---------- */
 function previewHTML(){
-  const t=snapshot(S.cfg.active);
+  const p=P(), t=snapshot(p,p.active);
   return `<span class="lbl">Linha do boletim · ${esc(t.roll)}.txt</span><code class="dim">${esc(lensLine(t))}</code><code>${esc(clipLine(t))}</code>`;
 }
-function updatePreview(){const p=$("#preview");if(p)p.innerHTML=previewHTML()}
-
+function updatePreview(){const e=$("#preview");if(e)e.innerHTML=previewHTML()}
 function viewTake(){
-  const u=U(), C=cam(u.camId)||CAMERAS[0], c=u.cur, L=lens(c.lensId);
-  const kit=allLenses().filter(l=>S.cfg.kitLenses.includes(l.id)||l.id===c.lensId);
-  const lensChips=kit.map(l=>chip("set","lensId",l.id,`<b>${l.zoom?`${l.focalMin}–${l.focalMax}`:l.focal}</b><small>${esc(l.seriesShort)}${l.tag?" "+esc(l.tag):""}</small>`,l.id===c.lensId,"lens")).join("");
+  const p=P(), u=U();
+  if(!u) return `<div class="empty"><b>Nenhuma câmera no projeto</b>Cadastre a primeira câmera para começar a registrar os takes.<button type="button" class="btn pri" data-act="sheet" data-v="addCam">+ Adicionar câmera</button></div>`;
+  const m=u.model, c=u.cur, L=lensById(p,c.lensId), stop=stopOf(L);
+  const lenses=allLensSorted(p);
+  const lensChips=lenses.map(l=>chip("set","lensId",l.id,`<b>${l.zoom?`${fmtNum(l.focalMin)}–${fmtNum(l.focalMax)}`:fmtNum(l.focal)}</b><small>${esc(l.series)}</small>`,l.id===c.lensId,"lens")).join("");
   let zoomBlk="";
   if(L&&L.zoom){
-    const marks=[...new Set([L.focalMin,...ZOOM_MARKS.filter(m=>m>L.focalMin&&m<L.focalMax),L.focalMax])];
-    zoomBlk=`<div class="sub">Distância focal</div><div class="strip" id="s-focal">${marks.map(m=>chip("set","focal",m,m,Number(c.focal)===m)).join("")}</div>
-      <label class="mini">Outra <input type="number" class="mono" inputmode="numeric" id="in-focal" data-bind="focal" min="${L.focalMin}" max="${L.focalMax}" placeholder="mm"></label>`;
+    const marks=[...new Set([L.focalMin,...ZOOM_MARKS.filter(x=>x>L.focalMin&&x<L.focalMax),L.focalMax])];
+    zoomBlk=`<div class="sub">Distância focal</div><div class="strip" id="s-focal">${marks.map(x=>chip("set","focal",x,fmtNum(x),Number(c.focal)===x)).join("")}</div>
+      <label class="mini">Outra <input type="text" inputmode="decimal" class="mono" id="in-focal" data-bind="focal" placeholder="mm"></label>`;
   }
-  const maxT=L?L.maxT:1;
-  const ts=[...new Set([maxT,...T_THIRDS.filter(x=>x>maxT+0.001)])];
+  const maxI=L?L.maxIris:IRIS[0];
+  const irisList=[...new Set([maxI,...IRIS.filter(x=>x>maxI+0.001)])];
+  if(!irisList.includes(Number(c.iris))) irisList.push(Number(c.iris)), irisList.sort((a,b)=>a-b);
   const shList=c.shMode==="deg"?SH_DEG:SH_FRAC;
-  const nd=C.nd||[];
-  const kitF=allFilters().filter(f=>S.cfg.kitFilters.includes(f.id)||c.filters.includes(f.id));
-  const isoL=C.isoLabel||"ISO";
+  const nd=m.nd||[];
+  const isoL=m.isoLabel||"ISO";
+  const cardTakes=Object.values(p.days).reduce((a,d)=>a+d.takes.filter(t=>t.unit===p.active&&t.roll===u.roll).length,0);
   return `
   <div class="preview" id="preview">${previewHTML()}</div>
+
+  <section class="blk">
+    <div class="card-row">
+      <div><span class="lbl">Cartão</span><div class="big">${esc(u.roll)}</div><span class="hint">${cardTakes} ${cardTakes===1?"clipe registrado":"clipes registrados"} neste cartão</span></div>
+      <button type="button" class="btn" data-act="sheet" data-v="card">Trocar cartão</button>
+      <div><span class="lbl">Próximo clipe</span></div>
+      <div class="step sm"><button type="button" data-act="clipStep" data-v="-1" aria-label="Clipe anterior">−</button><output>C${pad3(u.clip)}</output><button type="button" data-act="clipStep" data-v="1" aria-label="Próximo clipe">+</button></div>
+    </div>
+    <button type="button" class="linkrow" data-act="sheet" data-v="rec"><span>${u.codec||u.format?esc([u.codec,u.format].filter(Boolean).join(" · ")):"Escolher codec e formato"}</span><em>Alterar</em></button>
+  </section>
 
   <section class="blk">
     <div class="slate">
@@ -467,46 +615,55 @@ function viewTake(){
 
   <section class="blk">
     <div class="blk-h"><span class="lbl">Lente</span><span class="val">${esc(lensLabel(L,c.focal))}</span></div>
-    ${kit.length?`<div class="strip" id="s-lens">${lensChips}</div>`:`<p class="hint">Nenhuma lente no kit. Escolha as lentes na aba Kit.</p>`}
+    ${lenses.length?`<div class="strip" id="s-lens">${lensChips}</div>`:`<div class="row2"><span class="hint">Nenhuma lente cadastrada.</span><button type="button" class="btn sm" data-act="sheet" data-v="addLenses">+ Cadastrar lentes</button></div>`}
     ${zoomBlk}
   </section>
 
   <section class="blk">
-    <div class="blk-h"><span class="lbl">Íris</span><span class="val">${tLabel(c.t)}</span></div>
-    <div class="strip" id="s-t">${ts.map(x=>chip("set","t",x,x===maxT?`${x}<small>aberta</small>`:x,Number(c.t)===x)).join("")}</div>
+    <div class="blk-h"><span class="lbl">Íris</span><span class="val">${esc(irisText(stop,c.iris))}</span></div>
+    <div class="strip" id="s-iris">${irisList.map(x=>chip("set","iris",x,Math.abs(x-maxI)<0.001&&L?`${esc(stop+fmtNum(x))}<small>aberta</small>`:esc(stop+fmtNum(x)),Math.abs(Number(c.iris)-x)<0.001)).join("")}</div>
+    <label class="mini">Outra <input type="text" inputmode="decimal" class="mono" id="in-iris" data-bind="iris" placeholder="ex.: 2.4"></label>
   </section>
 
   <section class="blk">
     <div class="blk-h"><span class="lbl">Shutter</span>
-      <div class="seg" role="group" aria-label="Unidade do shutter"><button type="button" data-act="shMode" data-v="deg" aria-pressed="${c.shMode==="deg"}">Graus</button><button type="button" data-act="shMode" data-v="frac" aria-pressed="${c.shMode==="frac"}">Fração</button></div>
+      <div class="seg" role="group" aria-label="Unidade do shutter"><button type="button" data-act="shMode" data-v="deg" aria-pressed="${c.shMode==="deg"}">Ângulo</button><button type="button" data-act="shMode" data-v="frac" aria-pressed="${c.shMode==="frac"}">Fração</button></div>
       <span class="val">${esc(shText(c))}</span></div>
     <div class="strip" id="s-sh-${c.shMode}">${shList.map(x=>c.shMode==="deg"?chip("set","shDeg",x,fmtNum(x)+"°",Number(c.shDeg)===x):chip("set","shFrac",x,"1/"+x,Number(c.shFrac)===x)).join("")}</div>
     <div class="row2"><span class="hint">${esc(shEquiv(c))}</span>
-      <label class="mini" style="margin-left:auto">Outro <input type="number" class="mono" inputmode="decimal" id="in-sh" data-bind="${c.shMode==="deg"?"shDeg":"shFrac"}" placeholder="${c.shMode==="deg"?"graus":"1/x"}"></label></div>
+      <label class="mini" style="margin-left:auto">Outro <input type="text" inputmode="decimal" class="mono" id="in-sh" data-bind="${c.shMode==="deg"?"shDeg":"shFrac"}" placeholder="${c.shMode==="deg"?"graus":"1/x"}"></label></div>
   </section>
 
   <section class="blk">
-    <div class="blk-h"><span class="lbl">Quadros/s</span><span class="val">${esc(c.fps)} fps</span></div>
-    <div class="strip" id="s-fps">${FPS.map(x=>chip("set","fps",x,x,Number(c.fps)===x)).join("")}</div>
+    <div class="blk-h"><span class="lbl">Quadros/s</span><span class="val">${esc(fpsLabel(c.fps))} fps</span></div>
+    <div class="strip" id="s-fps">${FPS.map(x=>chip("set","fps",x,fpsLabel(x),Number(c.fps)===x)).join("")}</div>
   </section>
 
   <section class="blk">
     <div class="blk-h"><span class="lbl">${esc(isoL)}</span><span class="val">${esc(isoL)} ${esc(c.iso)}</span></div>
-    <div class="strip" id="s-iso">${C.ei.map(x=>chip("set","iso",x,x,Number(c.iso)===x,x===C.base?"base":"")).join("")}</div>
-    <span class="hint">O ponto marca o ${esc(isoL)} base da ${esc(C.name)} (${esc(C.base)}).</span>
+    <div class="strip" id="s-iso">${(m.ei||[]).map(x=>chip("set","iso",x,x,Number(c.iso)===x,x===m.base?"base":"")).join("")}</div>
+    ${m.base?`<span class="hint">O ponto marca o ${esc(isoL)} base (${esc(m.base)}).</span>`:""}
   </section>
 
   <section class="blk">
     <div class="blk-h"><span class="lbl">Temp. de cor</span><span class="val">${esc(c.wb)}K</span></div>
     <div class="strip" id="s-wb">${WB.map(x=>chip("set","wb",x,x,Number(c.wb)===x)).join("")}</div>
-    <label class="mini">Outra <input type="number" class="mono" inputmode="numeric" id="in-wb" data-bind="wb" placeholder="K"></label>
+    <label class="mini">Outra <input type="text" inputmode="numeric" class="mono" id="in-wb" data-bind="wb" placeholder="K"></label>
   </section>
 
   <section class="blk">
-    <div class="blk-h"><span class="lbl">Filtros</span><span class="val">${esc([c.ndInt?`ND${c.ndInt}(int)`:"",...c.filters.map(id=>(filt(id)||{}).code)].filter(Boolean).join(" ")||"nenhum")}</span></div>
-    ${nd.length?`<div class="sub">ND interno da câmera</div><div class="wrapchips">${chip("ndInt","nd","",`—`,!c.ndInt,"txt")}${nd.map(x=>chip("ndInt","nd",x,x,c.ndInt===x)).join("")}</div>`:""}
+    <div class="blk-h"><span class="lbl">Filtros</span><span class="val">${esc([c.ndInt?`ND${c.ndInt}(int)`:"",...c.filters.map(id=>(filtById(p,id)||{}).code)].filter(Boolean).join(" ")||"nenhum")}</span></div>
+    ${nd.length?`<div class="sub">ND interno da câmera</div><div class="wrapchips">${chip("ndInt","nd","","—",!c.ndInt,"txt")}${nd.map(x=>chip("ndInt","nd",x,x,c.ndInt===x)).join("")}</div>`:""}
     <div class="sub">Na matte box</div>
-    ${kitF.length?`<div class="wrapchips">${kitF.map(f=>chip("filter","f",f.id,`${esc(f.label)}<small>${esc(f.group)}</small>`,c.filters.includes(f.id),f.group.length>4?"txt":"")).join("")}</div>`:`<p class="hint">Nenhum filtro no kit. Escolha os filtros na aba Kit.</p>`}
+    ${p.filters.length?`<div class="wrapchips">${p.filters.map(f=>chip("filter","f",f.id,`${esc(f.label)}<small>${esc(f.group)}</small>`,c.filters.includes(f.id),f.label.length>4?"txt":"")).join("")}</div>`:`<div class="row2"><span class="hint">Nenhum filtro cadastrado.</span><button type="button" class="btn sm" data-act="sheet" data-v="addFilters">+ Cadastrar filtros</button></div>`}
+  </section>
+
+  <section class="blk">
+    <div class="blk-h"><span class="lbl">Distância e altura</span>
+      <div class="seg" style="margin-left:auto" role="group" aria-label="Registrar distância e altura"><button type="button" data-act="measures" data-v="0" aria-pressed="${!p.opts.measures}">Não</button><button type="button" data-act="measures" data-v="1" aria-pressed="${!!p.opts.measures}">Registrar</button></div></div>
+    ${p.opts.measures?`<div class="grid2">
+      <label class="fld"><span>Distância (m)</span><input type="text" inputmode="decimal" class="mono" id="in-dist" data-bind="dist" value="${esc(c.dist)}" placeholder="ex.: 3.5"></label>
+      <label class="fld"><span>Altura (m)</span><input type="text" inputmode="decimal" class="mono" id="in-alt" data-bind="alt" value="${esc(c.alt)}" placeholder="ex.: 1.2"></label></div>`:`<span class="hint">Ative quando a produção pedir distância e altura da câmera.</span>`}
   </section>
 
   <section class="blk">
@@ -516,158 +673,283 @@ function viewTake(){
   </section>`;
 }
 
-function viewBoletim(){
-  const key=viewDay&&S.days[viewDay]?viewDay:S.cfg.diariaKey;
-  const meta=S.cfg.diarias.find(d=>d.key===key)||{n:"?",date:""};
-  const d=S.days[key]||{takes:[]};
-  const opts=S.cfg.diarias.slice().reverse().map(x=>`<option value="${esc(x.key)}" ${x.key===key?"selected":""}>Diária ${esc(x.n)} · ${esc(brDate(x.date))}${x.key===S.cfg.diariaKey?" (atual)":""}</option>`).join("");
-  const groups=[]; const idx={};
-  d.takes.forEach(t=>{const g=t.unit+"|"+t.roll; if(!(g in idx)){idx[g]=groups.length;groups.push({unit:t.unit,roll:t.roll,cam:t.cam,takes:[]})} groups[idx[g]].takes.push(t)});
-  const body=groups.length?groups.map(g=>`
-    <div class="group">
-      <div class="group-h"><b>${esc(g.roll)}</b><span>CAM ${esc(g.unit)} · ${esc(g.cam)} · ${g.takes.length} ${g.takes.length===1?"clipe":"clipes"}</span>
-        <button type="button" class="btn sm" data-act="exportTxt" data-k="${esc(key)}" data-v="${esc(g.unit+"|"+g.roll)}">Baixar ${esc(g.roll)}.txt</button></div>
-      ${g.takes.slice().sort((a,b)=>a.clip-b.clip||a.ts-b.ts).map(t=>takeRow(t,key)).join("")}
-    </div>`).join(""):`<div class="empty"><b>Nenhum take nesta diária</b>Registre o primeiro na aba Take. Cada toque em Registrar vira uma linha aqui e no ${esc(U().roll)}.txt.</div>`;
+/* ---------- Kit ---------- */
+function clockHTML(p,d){
+  if(!d) return "";
+  const end=d.end||null, run=d.start&&!end, span=d.start?((end||Date.now())-d.start):0, over=span>12*3600000;
+  return `<div class="clock">
+    <div class="cell"><span>Início</span><b>${d.start?esc(hhmm(d.start)):"—"}</b></div>
+    <div class="cell"><span>Fim</span><b>${end?esc(hhmm(end)):"—"}</b></div></div>
+    ${d.start?`<span class="hint">${run?"Em andamento":"Duração"}: <b>${dur(span)}</b>${over?` · <span class="over">passou de 12h (+${dur(span-12*3600000)})</span>`:""}</span>`:""}
+    <div class="row2">
+      ${!d.start?`<button type="button" class="btn pri" data-act="dayStart" data-k="${esc(d.key)}">Iniciar diária agora</button>`:""}
+      ${d.start&&!end?`<button type="button" class="btn pri" data-act="dayEnd" data-k="${esc(d.key)}">Encerrar diária agora</button>`:""}
+      <button type="button" class="btn" data-act="sheet" data-v="editDay" data-id="${esc(d.key)}">Editar diária</button>
+    </div>`;
+}
+function viewKit(){
+  const p=P(), d=curDiaria(p);
+  const days=p.diarias.slice().sort((a,b)=>b.n-a.n).map(x=>{
+    const n=(p.days[x.key]||{takes:[]}).takes.length, del=armed==="delDay:"+x.key;
+    return `<div class="li ${x.key===p.diariaKey?"cur":""}">
+      <button type="button" class="t" style="background:none;border:0;text-align:left;padding:0" data-act="pickDay" data-v="${esc(x.key)}">Diária ${esc(x.n)} · ${esc(brDate(x.date))}${x.key===p.diariaKey?" · atual":""}
+        <small>${n} takes${x.start?` · ${hhmm(x.start)}–${x.end?hhmm(x.end):"…"}`:""}</small></button>
+      <button type="button" class="btn sm" data-act="sheet" data-v="editDay" data-id="${esc(x.key)}">Editar</button>
+      <button type="button" class="btn sm danger ${del?"armed":""}" data-act="delDay" data-v="${esc(x.key)}">${del?(n?`Apagar ${n} takes?`:"Confirmar"):"Excluir"}</button>
+    </div>`}).join("");
+  const units=p.unitOrder.map(k=>{
+    const u=p.units[k], m=u.model, del=armed==="delUnit:"+k;
+    return `<div class="unitcard">
+      <div class="blk-h"><span class="u">CAM ${k}</span><span class="hint">${esc([m.brand,m.name].filter(Boolean).join(" "))}</span>
+        <button type="button" class="btn sm" style="margin-left:auto" data-act="sheet" data-v="editCam" data-id="${k}">Editar</button>
+        <button type="button" class="btn sm danger ${del?"armed":""}" data-act="delUnit" data-v="${k}">${del?"Confirmar":"Excluir"}</button></div>
+      <div class="grid2">
+        <label>Codec<select id="in-codec-${k}" data-bind="codec" data-u="${k}">${m.codecs.map(x=>`<option ${x===u.codec?"selected":""}>${esc(x)}</option>`).join("")||"<option>—</option>"}</select></label>
+        <label>Formato / resolução<select id="in-format-${k}" data-bind="format" data-u="${k}">${m.formats.map(x=>`<option ${x===u.format?"selected":""}>${esc(x)}</option>`).join("")||"<option>—</option>"}</select></label>
+        <label>Cartão<input type="text" class="mono" id="in-roll-${k}" data-bind="roll" data-u="${k}" value="${esc(u.roll)}" autocapitalize="characters"></label>
+        <label>Próximo clipe<input type="number" class="mono" inputmode="numeric" min="1" id="in-clip-${k}" data-bind="clip" data-u="${k}" value="${esc(u.clip)}"></label>
+      </div></div>`}).join("");
+  const series={}; allLensSorted(p).forEach(l=>{(series[l.series]=series[l.series]||[]).push(l)});
+  const lensGroups=Object.entries(series).map(([s,ls])=>{const del=armed==="delSeries:"+s;return `<div class="series">
+    <div class="series-h"><b>${esc(s)}</b><span>${ls.length} ${ls.length===1?"lente":"lentes"}</span>
+      <button type="button" class="btn sm danger ${del?"armed":""}" data-act="delSeries" data-v="${esc(s)}">${del?"Excluir a série toda?":"Excluir série"}</button></div>
+    <div class="wrapchips">${ls.map(l=>chip("sheetLens","",l.id,`${l.zoom?`${fmtNum(l.focalMin)}–${fmtNum(l.focalMax)}`:fmtNum(l.focal)}<small>${esc(irisText(stopOf(l),l.maxIris))}</small>`,false)).join("")}</div></div>`}).join("");
+  const fg={}; p.filters.forEach(f=>{(fg[f.group]=fg[f.group]||[]).push(f)});
+  const filterGroups=Object.entries(fg).map(([g,fs])=>`<div class="series"><div class="series-h"><b>${esc(g)}</b></div>
+    <div class="wrapchips">${fs.map(f=>chip("sheetFilter","",f.id,`${esc(f.label)}<small>${esc(f.code)}</small>`,false,f.label.length>4?"txt":"")).join("")}</div></div>`).join("");
   return `
   <section class="blk">
-    <div class="blk-h"><span class="lbl">Diária</span></div>
+    <div class="blk-h"><span class="lbl">Diária atual</span><span class="val">${d?`${esc(d.n)} · ${esc(brDate(d.date))}`:"—"}</span></div>
+    ${clockHTML(p,d)}
+    <div class="sub">Todas as diárias</div>
+    <div class="list">${days}</div>
+    <button type="button" class="btn add" data-act="sheet" data-v="newDay">+ Adicionar diária</button>
+  </section>
+
+  <section class="blk">
+    <div class="blk-h"><span class="lbl">Câmeras</span><span class="val">${p.unitOrder.length}</span></div>
+    ${units||`<p class="hint">Nenhuma câmera ainda.</p>`}
+    ${p.unitOrder.length<8?`<button type="button" class="btn add" data-act="sheet" data-v="addCam">+ Adicionar câmera</button>`:""}
+  </section>
+
+  <section class="blk">
+    <div class="blk-h"><span class="lbl">Lentes</span><span class="val">${p.lenses.length}</span></div>
+    ${lensGroups||`<p class="hint">Nenhuma lente ainda. Cadastre o kit inteiro de uma vez, ex.: 10/12/14/16/20/25/32/50/85/135.</p>`}
+    ${p.lenses.length?`<span class="hint">Toque numa lente para corrigir ou excluir.</span>`:""}
+    <button type="button" class="btn add" data-act="sheet" data-v="addLenses">+ Adicionar lentes</button>
+  </section>
+
+  <section class="blk">
+    <div class="blk-h"><span class="lbl">Filtros</span><span class="val">${p.filters.length}</span></div>
+    ${filterGroups||`<p class="hint">Nenhum filtro ainda.</p>`}
+    ${p.filters.length?`<span class="hint">Toque num filtro para corrigir ou excluir.</span>`:""}
+    <button type="button" class="btn add" data-act="sheet" data-v="addFilters">+ Adicionar filtros</button>
+  </section>`;
+}
+
+/* ---------- Boletim ---------- */
+function viewBoletim(){
+  const p=P();
+  const key=viewDay&&p.days[viewDay]&&p.diarias.find(x=>x.key===viewDay)?viewDay:p.diariaKey;
+  const meta=p.diarias.find(d=>d.key===key)||{n:"?",date:""};
+  const d=p.days[key]||{takes:[],cards:[]};
+  const opts=p.diarias.slice().sort((a,b)=>b.n-a.n).map(x=>`<option value="${esc(x.key)}" ${x.key===key?"selected":""}>Diária ${esc(x.n)} · ${esc(brDate(x.date))}${x.key===p.diariaKey?" (atual)":""}</option>`).join("");
+  const groups=[], idx={};
+  d.takes.forEach(t=>{const g=t.unit+"|"+t.roll; if(!(g in idx)){idx[g]=groups.length;groups.push({unit:t.unit,roll:t.roll,cam:t.cam,takes:[]})} groups[idx[g]].takes.push(t)});
+  const cardsOf=(un,roll)=>(d.cards||[]).filter(c=>c.unit===un&&c.roll===roll);
+  const body=groups.length?groups.map(g=>{
+    const cin=cardsOf(g.unit,g.roll)[0];
+    return `<div class="group">
+      <div class="group-h"><b>${esc(g.roll)}</b><span>CAM ${esc(g.unit)} · ${esc(g.cam)} · ${g.takes.length} ${g.takes.length===1?"clipe":"clipes"}</span>
+        <button type="button" class="btn sm" data-act="exportTxt" data-k="${esc(key)}" data-v="${esc(g.unit+"|"+g.roll)}">Baixar ${esc(g.roll)}.txt</button></div>
+      ${cin?`<div class="cardlog">Cartão ${esc(g.roll)} entrou às ${esc(hhmm(cin.ts))}</div>`:""}
+      ${g.takes.slice().sort((a,b)=>a.clip-b.clip||a.ts-b.ts).map(t=>takeRow(t,key)).join("")}
+    </div>`}).join(""):`<div class="empty"><b>Nenhum take nesta diária</b>Registre o primeiro na aba Take.</div>`;
+  return `
+  <section class="blk">
+    <div class="blk-h"><span class="lbl">Diária</span><button type="button" class="btn sm" style="margin-left:auto" data-act="sheet" data-v="editDay" data-id="${esc(key)}">Editar diária</button></div>
     <select id="in-viewday" data-bind="viewDay" aria-label="Escolher diária">${opts}</select>
-    <div class="row2"><span class="hint">${d.takes.length} ${d.takes.length===1?"take":"takes"}${S.cfg.producao?" · "+esc(S.cfg.producao):""}</span>
-      ${d.takes.length?`<button type="button" class="btn sm" style="margin-left:auto" data-act="exportCsv" data-k="${esc(key)}">Planilha da diária (.csv)</button>`:""}</div>
-    <p class="hint" style="margin:0">O <b>.txt</b> de cada rolo segue o formato que o Offload Report lê: salve em <code>RELATORIO_CAMERA/</code> na pasta de relatórios do projeto.</p>
+    ${meta.start?`<span class="hint">Início ${esc(hhmm(meta.start))}${meta.end?` · fim ${esc(hhmm(meta.end))} · ${dur(meta.end-meta.start)}`:" · em andamento"}${((meta.end||Date.now())-meta.start)>12*3600000?` · <span class="over">passou de 12h</span>`:""}</span>`:""}
+    <div class="row2"><span class="hint">${d.takes.length} ${d.takes.length===1?"take":"takes"}</span>
+      <button type="button" class="btn sm" style="margin-left:auto" data-act="exportResumo" data-k="${esc(key)}">Resumo (.txt)</button>
+      ${d.takes.length?`<button type="button" class="btn sm" data-act="exportCsv" data-k="${esc(key)}">Planilha (.csv)</button>`:""}</div>
+    <p class="hint">O <b>.txt</b> de cada cartão segue o formato que o Offload Report lê: salve em <code>RELATORIO_CAMERA/</code> na pasta de relatórios do projeto.</p>
   </section>
   ${backupNudge()}
   ${body}`;
 }
 function takeRow(t,key){
   const open=openTake===t.id;
-  const spec=[t.lens.replace(/^DZO /,""),tLabel(t.t),t.sh,t.fps+"fps",t.isoLabel+t.iso,t.wb+"K",...t.filters].join(" · ");
+  const spec=[t.lens,tIris(t),t.sh,fpsLabel(t.fps)+"fps",t.isoLabel+t.iso,t.wb+"K",...(t.filters||[]),t.dist?`Dist ${t.dist}m`:"",t.alt?`Alt ${t.alt}m`:""].filter(Boolean).join(" · ");
   const delArmed=armed==="del:"+t.id;
+  const pc=t.aval==="False Take"?"FT":t.aval;
   return `<div class="take">
     <button type="button" class="take-row" data-act="openTake" data-v="${esc(t.id)}" aria-expanded="${open}">
       <span class="clip">C${pad3(t.clip)}</span><span class="sl">Cena ${esc(t.cena||"-")} · Pl ${esc(t.plano||"-")} · Tk ${esc(t.take)}</span>
-      ${t.aval?`<span class="pill ${esc(t.aval)}">${esc(t.aval)}</span>`:`<span class="pill">—</span>`}
+      ${t.aval?`<span class="pill ${esc(pc)}">${esc(t.aval)}</span>`:`<span class="pill">—</span>`}
       <span class="spec">${esc(spec)}${t.obs?" · "+esc(t.obs):""}</span>
     </button>
     ${open?`<div class="take-detail">
-      <dl><dt>Câmera</dt><dd>${esc(t.cam)} · ${esc(t.codec)}</dd><dt>Lente</dt><dd>${esc(t.lens)}</dd>
-      <dt>Shutter</dt><dd>${esc(t.sh)} (${esc(t.shEq)})</dd><dt>Hora</dt><dd>${new Date(t.ts).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</dd></dl>
-      <div class="aval">${AVAL.map(a=>chip("takeAval",key,a,a,t.aval===a,"txt").replace('data-act="takeAval"',`data-act="takeAval" data-id="${esc(t.id)}"`)).join("")}</div>
-      <input type="text" id="in-tobs-${esc(t.id)}" data-bind="takeObs" data-id="${esc(t.id)}" data-k="${esc(key)}" value="${esc(t.obs)}" placeholder="Obs." autocomplete="off">
+      <dl><dt>Câmera</dt><dd>${esc(t.cam)}</dd><dt>Gravação</dt><dd>${esc([t.codec,t.format].filter(Boolean).join(" · ")||"—")}</dd>
+      <dt>Shutter</dt><dd>${esc(t.sh)} (${esc(t.shEq)})</dd><dt>Hora</dt><dd>${esc(hhmm(t.ts))}</dd></dl>
+      <div class="grid4">
+        <label>Clipe<input type="number" class="mono" inputmode="numeric" min="1" id="te-clip-${esc(t.id)}" data-bind="takeField" data-f="clip" data-id="${esc(t.id)}" data-k="${esc(key)}" value="${esc(t.clip)}"></label>
+        <label>Cena<input type="text" class="mono" id="te-cena-${esc(t.id)}" data-bind="takeField" data-f="cena" data-id="${esc(t.id)}" data-k="${esc(key)}" value="${esc(t.cena)}"></label>
+        <label>Plano<input type="text" class="mono" id="te-plano-${esc(t.id)}" data-bind="takeField" data-f="plano" data-id="${esc(t.id)}" data-k="${esc(key)}" value="${esc(t.plano)}"></label>
+        <label>Take<input type="number" class="mono" inputmode="numeric" min="1" id="te-take-${esc(t.id)}" data-bind="takeField" data-f="take" data-id="${esc(t.id)}" data-k="${esc(key)}" value="${esc(t.take)}"></label>
+      </div>
+      <div class="aval">${AVAL.map(a=>`<button type="button" class="chip txt" data-act="takeAval" data-k="${esc(key)}" data-id="${esc(t.id)}" data-v="${esc(a)}" aria-pressed="${t.aval===a}">${esc(a)}</button>`).join("")}</div>
+      <input type="text" id="te-obs-${esc(t.id)}" data-bind="takeField" data-f="obs" data-id="${esc(t.id)}" data-k="${esc(key)}" value="${esc(t.obs)}" placeholder="Obs." autocomplete="off">
       <div class="row2"><button type="button" class="btn sm danger ${delArmed?"armed":""}" data-act="takeDel" data-k="${esc(key)}" data-v="${esc(t.id)}">${delArmed?"Toque de novo para excluir":"Excluir take"}</button></div>
     </div>`:""}
   </div>`;
 }
 
-function viewKit(){
-  const meta=curDiariaMeta();
-  const camOpts=sel=>allCams().map(c=>`<option value="${esc(c.id)}" ${c.id===sel?"selected":""}>${esc(c.brand?c.brand+" ":"")}${esc(c.name)}</option>`).join("");
-  const units=S.cfg.unitOrder.map(k=>{
-    const u=S.cfg.units[k], C=cam(u.camId)||CAMERAS[0];
-    const rmArmed=armed==="rmUnit:"+k;
-    return `<div class="unitcard">
-      <div class="blk-h"><span class="u">CAM ${k}</span><span class="hint">${esc(C.sensor||"")}</span>
-        ${S.cfg.unitOrder.length>1?`<button type="button" class="btn sm danger ${rmArmed?"armed":""}" style="margin-left:auto" data-act="rmUnit" data-v="${k}">${rmArmed?"Confirmar remoção":"Remover"}</button>`:""}</div>
-      <div class="grid2">
-        <label>Modelo<select id="in-cam-${k}" data-bind="camId" data-u="${k}">${camOpts(u.camId)}</select></label>
-        <label>Codec<select id="in-codec-${k}" data-bind="codec" data-u="${k}">${C.codecs.map(x=>`<option ${x===u.codec?"selected":""}>${esc(x)}</option>`).join("")}</select></label>
-        <label>Rolo (cartão)<input type="text" class="mono" id="in-roll-${k}" data-bind="roll" data-u="${k}" value="${esc(u.roll)}" autocapitalize="characters"></label>
-        <label>Próximo clipe<input type="number" class="mono" inputmode="numeric" min="1" id="in-clip-${k}" data-bind="clip" data-u="${k}" value="${esc(u.clip)}"></label>
-      </div>
-      <button type="button" class="btn" data-act="newRoll" data-v="${k}">Trocar cartão → ${esc(nextRoll(u.roll))} (clipe volta a C001)</button>
-    </div>`;
-  }).join("");
-  const series={};
-  allLenses().forEach(l=>{const g=(l.brand||"")+"|"+l.series+"|"+(l.fmt||"");(series[g]=series[g]||[]).push(l)});
-  const lensGroups=Object.entries(series).map(([g,ls])=>{const [b,s,f]=g.split("|");return `<div class="series">
-    <div class="series-h"><b>${esc(b)} ${esc(s)}</b><span>${esc(f)}</span></div>
-    <div class="wrapchips">${ls.map(l=>chip("kitLens","",l.id,`${l.zoom?`${l.focalMin}–${l.focalMax}`:l.focal}<small>T${l.maxT}</small>`,S.cfg.kitLenses.includes(l.id))).join("")}</div></div>`}).join("");
-  const fg={}; allFilters().forEach(f=>{(fg[f.group]=fg[f.group]||[]).push(f)});
-  const filterGroups=Object.entries(fg).map(([g,fs])=>`<div class="series"><div class="series-h"><b>${esc(g)}</b></div>
-    <div class="wrapchips">${fs.map(f=>chip("kitFilter","",f.id,esc(f.label),S.cfg.kitFilters.includes(f.id),f.label.length>4?"txt":"")).join("")}</div></div>`).join("");
-  const ndArmed=armed==="newDay";
+/* ---------- Projeto ---------- */
+function viewProjeto(){
+  const p=P(), tm=p.team, delArmed=armed==="delProj:"+p.id;
+  const field=(k,l)=>`<label class="fld"><span>${esc(l)}</span><input type="text" id="tm-${k}" data-bind="team" data-f="${k}" value="${esc(tm[k]||"")}" autocomplete="off"></label>`;
+  const opt=TEAM_OPT.map(([k,l])=>tm[k]!==null&&tm[k]!==undefined?`<div class="row2" style="align-items:end">${field(k,l).replace('class="fld"','class="fld" style="flex:1"')}<button type="button" class="x" data-act="teamOpt" data-v="${k}" aria-label="Tirar ${esc(l)}">×</button></div>`:"").join("");
+  const extras=(tm.extras||[]).map(x=>`<div class="row2" style="align-items:end">
+      <label class="fld" style="flex:1"><span>Função</span><input type="text" id="tx-r-${esc(x.id)}" data-bind="extra" data-f="role" data-id="${esc(x.id)}" value="${esc(x.role)}" placeholder="ex.: Steadicam"></label>
+      <label class="fld" style="flex:1.4"><span>Nome</span><input type="text" id="tx-n-${esc(x.id)}" data-bind="extra" data-f="name" data-id="${esc(x.id)}" value="${esc(x.name)}"></label>
+      <button type="button" class="x" data-act="delExtra" data-v="${esc(x.id)}" aria-label="Tirar função">×</button></div>`).join("");
+  const addOpt=TEAM_OPT.filter(([k])=>tm[k]===null||tm[k]===undefined).map(([k,l])=>`<button type="button" class="btn sm add" data-act="teamOpt" data-v="${k}">+ ${esc(l)}</button>`).join("");
   return `
-  ${installBlk()}
-  ${backupBlk()}
   <section class="blk">
-    <div class="blk-h"><span class="lbl">Diária ${esc(meta.n)}</span><span class="val">${esc(brDate(meta.date))}</span></div>
-    <label class="mini" style="flex-direction:column;align-items:stretch">Produção<input type="text" id="in-prod" data-bind="producao" value="${esc(S.cfg.producao)}" placeholder="Nome do projeto (opcional)"></label>
-    <button type="button" class="btn ${ndArmed?"armed":""}" data-act="newDay">${ndArmed?"Toque de novo: começar Diária "+(maxDiaria()+1):"Começar nova diária"}</button>
-    <span class="hint">A diária atual fica guardada na aba Boletim. Rolos e clipes continuam de onde pararam.</span>
+    <div class="blk-h"><span class="lbl">Metadados</span></div>
+    <label class="fld"><span>Nome do projeto</span><input type="text" id="pj-name" data-bind="projName" value="${esc(p.name)}" autocomplete="off"></label>
+    <label class="fld"><span>Produtora (opcional)</span><input type="text" id="pj-prod" data-bind="projProd" value="${esc(p.produtora)}" autocomplete="off"></label>
+    <span class="hint">O nome do projeto entra na planilha e no resumo da diária.</span>
   </section>
-
   <section class="blk">
-    <div class="blk-h"><span class="lbl">Câmeras</span></div>
-    ${units}
-    ${S.cfg.unitOrder.length<6?`<button type="button" class="btn" data-act="addUnit">+ Adicionar câmera ${nextUnitLetter()}</button>`:""}
+    <div class="blk-h"><span class="lbl">Equipe</span></div>
+    ${TEAM.map(([k,l])=>field(k,l)).join("")}
+    ${opt}${extras}
+    <div class="row2">${addOpt}<button type="button" class="btn sm add" data-act="addExtra">+ Outra função</button></div>
   </section>
-
   <section class="blk">
-    <div class="blk-h"><span class="lbl">Lentes no kit</span><span class="val">${S.cfg.kitLenses.length}</span></div>
-    <p class="note">Catálogo de exemplo (ARRI + DZOFilm). Confira T máximo e faixas antes de usar no set.</p>
-    ${lensGroups}
-    <details class="more"><summary>Cadastrar lente</summary>
-      <div class="form">
-        <label class="full">Marca e série<input type="text" id="nl-series" placeholder="ex.: Cooke S4/i"></label>
-        <label>Focal (mm)<input type="text" class="mono" id="nl-focal" placeholder="35 ou 24-70"></label>
-        <label>T máximo<input type="number" class="mono" inputmode="decimal" step="0.1" id="nl-t" placeholder="2"></label>
-        <button type="button" class="btn pri full" data-act="addLens">Adicionar ao kit</button>
-      </div></details>
-  </section>
-
-  <section class="blk">
-    <div class="blk-h"><span class="lbl">Filtros no kit</span><span class="val">${S.cfg.kitFilters.length}</span></div>
-    ${filterGroups}
-    <details class="more"><summary>Cadastrar filtro</summary>
-      <div class="form">
-        <label>Tipo<input type="text" id="nf-group" placeholder="ex.: Glimmerglass"></label>
-        <label>Valor<input type="text" id="nf-label" placeholder="ex.: 1/2"></label>
-        <label class="full">Sigla no boletim<input type="text" class="mono" id="nf-code" placeholder="ex.: GG1/2"></label>
-        <button type="button" class="btn pri full" data-act="addFilter">Adicionar ao kit</button>
-      </div></details>
-  </section>
-
-  <section class="blk">
-    <div class="blk-h"><span class="lbl">Outra câmera</span></div>
-    <details class="more"><summary>Cadastrar modelo de câmera</summary>
-      <div class="form">
-        <label class="full">Marca e modelo<input type="text" id="nc-name" placeholder="ex.: Sony FX6"></label>
-        <label class="full">ISOs disponíveis (separe por vírgula)<input type="text" class="mono" id="nc-iso" placeholder="800, 1600, 3200, 12800"></label>
-        <label>ISO base<input type="number" class="mono" inputmode="numeric" id="nc-base" placeholder="800"></label>
-        <label>Shutter padrão<select id="nc-sh"><option value="frac">Fração (1/50)</option><option value="deg">Graus (180°)</option></select></label>
-        <label>Nome do ganho<select id="nc-isol"><option>ISO</option><option>EI</option></select></label>
-        <label>ND interno (opcional)<input type="text" class="mono" id="nc-nd" placeholder="0.6, 1.2, 1.8"></label>
-        <label class="full">Codecs (opcional)<input type="text" id="nc-codecs" placeholder="XAVC S-I, ProRes RAW"></label>
-        <button type="button" class="btn pri full" data-act="addCam">Cadastrar câmera</button>
-      </div></details>
-    <span class="hint">Câmeras que mostram o obturador em fração (1/50) já abrem nesse modo. Dá para trocar a qualquer momento na aba Take.</span>
+    <div class="blk-h"><span class="lbl">Projeto</span></div>
+    <div class="row2"><button type="button" class="btn" data-act="home">Trocar de projeto</button>
+      <button type="button" class="btn danger ${delArmed?"armed":""}" data-act="delProj" data-v="${esc(p.id)}">${delArmed?"Toque de novo: apagar o projeto e os takes":"Excluir projeto"}</button></div>
   </section>`;
 }
-function installBlk(){
-  if(isStandalone()) return "";
-  const how=installEvt?`<button type="button" class="btn pri" data-act="install">Instalar app</button>`
-    :isIOS()?`<p class="hint" style="margin:0">No Safari: toque em <b>Compartilhar</b> → <b>Adicionar à Tela de Início</b>.</p>`
-    :`<p class="hint" style="margin:0">No Chrome: menu <b>⋮</b> → <b>Instalar app</b> (ou <b>Adicionar à tela inicial</b>).</p>`;
-  return `<section class="blk"><div class="blk-h"><span class="lbl">Instalar no celular</span></div>${how}<span class="hint">Instalado, o app abre em tela cheia e funciona sem internet.</span></section>`;
+
+/* ===================== Folhas de cadastro ===================== */
+function openSheet(s){sheet=s; armed=null; renderSheet(); setTimeout(()=>{const f=$("#sheetIn [data-autofocus]"); if(f) f.focus()},60)}
+function closeSheet(){sheet=null; renderSheet()}
+function sheetWrap(title,body,foot){return `<div class="sheet-h"><h2>${esc(title)}</h2><button type="button" class="x" data-act="closeSheet" aria-label="Fechar">×</button></div>${body}${foot?`<div class="sheet-foot">${foot}</div>`:""}`}
+function renderSheet(){
+  const el=$("#sheet"); if(!sheet){el.hidden=true;$("#sheetIn").innerHTML="";return}
+  const p=P(); let h="";
+  switch(sheet.type){
+    case "newProj": h=sheetWrap("Novo projeto",`<div class="form">
+        <label class="full">Nome do projeto<input type="text" id="sh-name" data-autofocus placeholder="ex.: Curta Capim"></label>
+        <label class="full">Produtora (opcional)<input type="text" id="sh-prod"></label></div>
+        <span class="hint">Depois você cadastra câmeras, lentes, filtros e a equipe. A diária 1 já começa com a data de hoje.</span>`,
+        `<button type="button" class="btn pri" data-act="saveNewProj">Criar projeto</button>`); break;
+    case "renameProj": {const q=store.projects[sheet.id]; h=sheetWrap("Renomear projeto",`<div class="form"><label class="full">Nome do projeto<input type="text" id="sh-name" data-autofocus value="${esc(q?q.name:"")}"></label></div>`,`<button type="button" class="btn pri" data-act="saveRename">Salvar</button>`); break}
+    case "addCam": {
+      const brands={}; CATALOG.forEach(m=>{(brands[m.brand]=brands[m.brand]||[]).push(m)});
+      h=sheetWrap(`Adicionar câmera ${nextLetter(p)||""}`,`
+        ${Object.entries(brands).map(([b,ms])=>`<div class="sub">${esc(b)}</div><div class="wrapchips">${ms.map(m=>`<button type="button" class="chip txt" data-act="pickModel" data-v="${esc(m.catalogId)}">${esc(m.name)}</button>`).join("")}</div>`).join("")}
+        <p class="note">Codecs e formatos vêm das fichas da ARRI. Depois de adicionar, dá para tirar ou incluir qualquer item em Editar.</p>
+        <button type="button" class="btn" data-act="pickModel" data-v="">Outra câmera (cadastro manual)</button>`,""); break}
+    case "editCam": {
+      const m=sheet.draft;
+      h=sheetWrap(sheet.letter?`Editar CAM ${sheet.letter}`:"Nova câmera",`<div class="form">
+        <label>Marca<input type="text" id="sh-brand" data-draft="brand" value="${esc(m.brand)}" placeholder="ex.: Sony"></label>
+        <label>Modelo<input type="text" id="sh-model" data-draft="name" value="${esc(m.name)}" placeholder="ex.: VENICE 2" data-autofocus></label>
+        <label class="full">${esc(m.isoLabel||"ISO")} disponíveis (separe por vírgula)<input type="text" class="mono" id="sh-ei" data-draft="ei" value="${esc(m.ei.join(", "))}"></label>
+        <label>${esc(m.isoLabel||"ISO")} base<input type="text" inputmode="numeric" class="mono" id="sh-base" data-draft="base" value="${esc(m.base||"")}"></label>
+        <label>Nome do ganho<select id="sh-isol" data-draft="isoLabel"><option ${m.isoLabel==="EI"?"selected":""}>EI</option><option ${m.isoLabel!=="EI"?"selected":""}>ISO</option></select></label>
+        <label>Shutter padrão<select id="sh-sh" data-draft="sh"><option value="deg" ${m.sh==="deg"?"selected":""}>Ângulo (180°)</option><option value="frac" ${m.sh==="frac"?"selected":""}>Fração (1/50)</option></select></label>
+        <label>ND interno (opcional)<input type="text" class="mono" id="sh-nd" data-draft="nd" value="${esc(m.nd.join(", "))}" placeholder="0.6, 1.2, 1.8"></label></div>
+        <div class="sub">Codecs (${m.codecs.length})</div>
+        <div class="wrapchips">${m.codecs.map((c,i)=>`<span class="tag">${esc(c)}<button type="button" data-act="draftDel" data-f="codecs" data-v="${i}" aria-label="Tirar ${esc(c)}">×</button></span>`).join("")||`<span class="hint">Nenhum codec.</span>`}</div>
+        <div class="row2"><input type="text" id="sh-addcodec" placeholder="Incluir codec (ex.: X-OCN XT)" style="flex:1"><button type="button" class="btn" data-act="draftAdd" data-f="codecs" data-v="sh-addcodec">Incluir</button></div>
+        <div class="sub">Formatos / resoluções (${m.formats.length})</div>
+        <div class="list">${m.formats.map((c,i)=>`<div class="li"><span class="t">${esc(c)}</span><button type="button" class="x" data-act="draftDel" data-f="formats" data-v="${i}" aria-label="Tirar formato">×</button></div>`).join("")||`<div class="li"><span class="t hint">Nenhum formato.</span></div>`}</div>
+        <div class="row2"><input type="text" id="sh-addformat" placeholder="Incluir formato (ex.: 4K 17:9 Open Gate)" style="flex:1"><button type="button" class="btn" data-act="draftAdd" data-f="formats" data-v="sh-addformat">Incluir</button></div>`,
+        `<button type="button" class="btn pri" data-act="saveCam">${sheet.letter?"Salvar câmera":"Adicionar câmera"}</button>`); break}
+    case "rec": {
+      const u=U(); if(!u){closeSheet();return}
+      h=sheetWrap(`Gravação · CAM ${p.active}`,`
+        <div class="sub">Codec</div><div class="wrapchips">${u.model.codecs.map(c=>`<button type="button" class="chip txt" data-act="setRec" data-f="codec" data-v="${esc(c)}" aria-pressed="${c===u.codec}">${esc(c)}</button>`).join("")||`<span class="hint">Nenhum codec cadastrado.</span>`}</div>
+        <div class="sub">Formato / resolução</div><div class="list">${u.model.formats.map(f=>`<button type="button" class="li" style="text-align:left;font:inherit;color:inherit;${f===u.format?"box-shadow:inset 3px 0 0 var(--accent)":""}" data-act="setRec" data-f="format" data-v="${esc(f)}"><span class="t">${esc(f)}</span>${f===u.format?"<b>✓</b>":""}</button>`).join("")||`<div class="li"><span class="t hint">Nenhum formato cadastrado.</span></div>`}</div>
+        <button type="button" class="btn sm" data-act="sheet" data-v="editCam" data-id="${p.active}">Editar listas desta câmera</button>`,""); break}
+    case "card": {
+      const u=U(); if(!u){closeSheet();return}
+      h=sheetWrap(`Trocar cartão · CAM ${p.active}`,`<div class="form">
+        <label class="full">Novo cartão<input type="text" class="mono" id="sh-roll" data-autofocus value="${esc(nextRoll(u.roll))}" autocapitalize="characters"></label></div>
+        <span class="hint">Cartão atual: ${esc(u.roll)}, próximo clipe C${pad3(u.clip)}. No cartão novo a numeração volta para C001 e sobe a cada take registrado.</span>`,
+        `<button type="button" class="btn pri" data-act="saveCard">Entrar com o cartão</button>`); break}
+    case "addLenses": h=sheetWrap("Adicionar lentes",`<div class="form">
+        <label class="full">Marca e série<input type="text" id="sh-series" data-autofocus placeholder="ex.: DZO Vespid"></label>
+        <label class="full">Distâncias focais (mm)<input type="text" class="mono" id="sh-focais" data-live="lenses" placeholder="10/12/14/16/20/25/32/50/85/135"></label>
+        <label>Íris máxima<input type="text" inputmode="decimal" class="mono" id="sh-maxiris" data-live="lenses" placeholder="ex.: 0.95, 1.9, 2.8"></label>
+        <label>Tipo<select id="sh-stop" data-live="lenses"><option value="T">T (cinema)</option><option value="F">F (fotográfica)</option></select></label></div>
+        <span class="hint">Use <b>/</b> para separar lentes fixas e <b>-</b> para zoom: <code>25/35/50</code>, <code>24-70</code>, ou os dois: <code>18-35/50-125</code>. Use ponto na íris: 0.95, 1.9, 2.8.</span>
+        <div id="lensPreview" class="hint"></div>`,
+        `<button type="button" class="btn pri" data-act="saveLenses">Adicionar ao kit</button>`); break;
+    case "editLens": {const l=lensById(p,sheet.id); if(!l){closeSheet();return} const del=armed==="delLens:"+l.id;
+      h=sheetWrap("Corrigir lente",`<div class="form">
+        <label class="full">Marca e série<input type="text" id="sh-series" value="${esc(l.series)}"></label>
+        <label>Focal (mm)<input type="text" class="mono" id="sh-focal" value="${esc(l.zoom?`${fmtNum(l.focalMin)}-${fmtNum(l.focalMax)}`:fmtNum(l.focal))}" placeholder="35 ou 24-70"></label>
+        <label>Íris máxima<input type="text" inputmode="decimal" class="mono" id="sh-maxiris" value="${esc(fmtNum(l.maxIris))}"></label>
+        <label class="full">Tipo<select id="sh-stop"><option value="T" ${stopOf(l)==="T"?"selected":""}>T (cinema)</option><option value="F" ${stopOf(l)==="F"?"selected":""}>F (fotográfica)</option></select></label></div>`,
+        `<button type="button" class="btn danger ${del?"armed":""}" data-act="delLens" data-v="${esc(l.id)}">${del?"Confirmar exclusão":"Excluir lente"}</button><button type="button" class="btn pri" data-act="saveLens">Salvar</button>`); break}
+    case "addFilters": {
+      const groups={}; FILTER_PRESETS.forEach(f=>{(groups[f.group]=groups[f.group]||[]).push(f)});
+      const has=f=>p.filters.some(x=>x.code===f.code);
+      h=sheetWrap("Adicionar filtros",`<span class="hint">Toque para incluir ou tirar do kit.</span>
+        ${Object.entries(groups).map(([g,fs])=>`<div class="sub">${esc(g)}</div><div class="wrapchips">${fs.map(f=>`<button type="button" class="chip ${f.label.length>4?"txt":""}" data-act="togglePreset" data-v="${esc(f.code)}" aria-pressed="${has(f)}">${esc(f.label)}</button>`).join("")}</div>`).join("")}
+        <div class="sub">Outro filtro</div>
+        <div class="form">
+          <label>Tipo<input type="text" id="sh-fgroup" placeholder="ex.: Soft FX"></label>
+          <label>Valor<input type="text" id="sh-flabel" placeholder="ex.: 1/2"></label>
+          <label class="full">Sigla no boletim<input type="text" class="mono" id="sh-fcode" placeholder="ex.: SFX1/2"></label>
+          <button type="button" class="btn full" data-act="addCustomFilter" style="grid-column:1/-1">Incluir este filtro</button></div>`,
+        `<button type="button" class="btn pri" data-act="closeSheet">Pronto</button>`); break}
+    case "editFilter": {const f=filtById(p,sheet.id); if(!f){closeSheet();return} const del=armed==="delFilter:"+f.id;
+      h=sheetWrap("Corrigir filtro",`<div class="form">
+        <label>Tipo<input type="text" id="sh-fgroup" value="${esc(f.group)}"></label>
+        <label>Valor<input type="text" id="sh-flabel" value="${esc(f.label)}"></label>
+        <label class="full">Sigla no boletim<input type="text" class="mono" id="sh-fcode" value="${esc(f.code)}"></label></div>`,
+        `<button type="button" class="btn danger ${del?"armed":""}" data-act="delFilter" data-v="${esc(f.id)}">${del?"Confirmar exclusão":"Excluir filtro"}</button><button type="button" class="btn pri" data-act="saveFilter">Salvar</button>`); break}
+    case "newDay": {const n=Math.max(0,...p.diarias.map(d=>Number(d.n)||0))+1;
+      h=sheetWrap("Nova diária",`<div class="form">
+        <label>Número<input type="number" inputmode="numeric" class="mono" id="sh-dn" value="${n}"></label>
+        <label>Data<input type="date" id="sh-dd" value="${today()}"></label></div>
+        <span class="hint">A data vem do celular. A diária nova passa a ser a atual.</span>`,
+        `<button type="button" class="btn pri" data-act="saveNewDay">Criar diária</button>`); break}
+    case "editDay": {const d=p.diarias.find(x=>x.key===sheet.id); if(!d){closeSheet();return}
+      const tv=ts=>ts?new Date(ts).toTimeString().slice(0,5):"";
+      h=sheetWrap(`Editar diária ${d.n}`,`<div class="form">
+        <label>Número<input type="number" inputmode="numeric" class="mono" id="sh-dn" value="${esc(d.n)}"></label>
+        <label>Data<input type="date" id="sh-dd" value="${esc(d.date)}"></label>
+        <label>Início<input type="time" id="sh-ds" value="${tv(d.start)}"></label>
+        <label>Fim<input type="time" id="sh-de" value="${tv(d.end)}"></label></div>
+        <span class="hint">Se o fim for menor que o início, conta como depois da meia-noite. Deixe em branco para apagar o horário.</span>`,
+        `${d.key!==p.diariaKey?`<button type="button" class="btn" data-act="pickDay" data-v="${esc(d.key)}">Tornar atual</button>`:""}<button type="button" class="btn pri" data-act="saveDay">Salvar diária</button>`); break}
+  }
+  $("#sheetIn").innerHTML=h; el.hidden=false;
+  if(sheet.type==="addLenses") lensPreview();
 }
-function backupBlk(){
-  const total=Object.values(S.days).reduce((a,d)=>a+d.takes.length,0);
-  const pr=pendingRestore?`<div class="unitcard"><b>Restaurar ${esc(pendingRestore.name)}?</b>
-      <span class="hint">${pendingRestore.takes} takes${pendingRestore.exportedAt?` · backup de ${esc(new Date(pendingRestore.exportedAt).toLocaleString("pt-BR"))}`:""}. Isso <b>substitui tudo</b> o que está neste aparelho (${total} takes).</span>
-      <div class="row2"><button type="button" class="btn armed" data-act="restoreApply">Substituir pelos dados do backup</button><button type="button" class="btn" data-act="restoreCancel">Cancelar</button></div></div>`:"";
-  return `<section class="blk"><div class="blk-h"><span class="lbl">Backup</span><span class="val">${S.cfg.lastBackup?esc(ago(S.cfg.lastBackup)):"nunca"}</span></div>
-    <span class="hint">Os dados ficam só neste aparelho. O backup gera um arquivo com tudo (kit, diárias e takes): mande para o Drive, iCloud ou WhatsApp.</span>
-    <div class="row2"><button type="button" class="btn pri" data-act="backup">Fazer backup</button><button type="button" class="btn" data-act="restorePick">Restaurar backup</button></div>
-    ${pr}</section>`;
+function parseFocais(s){
+  const out=[], bad=[];
+  String(s||"").split("/").map(x=>x.trim()).filter(Boolean).forEach(tok=>{
+    const z=tok.match(/^(\d+(?:[.,]\d+)?)\s*-\s*(\d+(?:[.,]\d+)?)$/);
+    if(z){const a=num(z[1]),b=num(z[2]); if(a>0&&b>a) out.push({zoom:true,focalMin:a,focalMax:b}); else bad.push(tok); return}
+    const f=num(tok.replace(/mm$/i,"")); if(f>0&&/^\d+([.,]\d+)?(mm)?$/i.test(tok)) out.push({zoom:false,focal:f}); else bad.push(tok);
+  });
+  return {out,bad};
 }
-function backupNudge(){
-  if(!needsBackup()) return "";
-  return `<div class="note row2" style="border-left-color:var(--accent)"><span>Há takes sem backup${S.cfg.lastBackup?` (último ${esc(ago(S.cfg.lastBackup))})`:""}.</span><button type="button" class="btn sm pri" style="margin-left:auto" data-act="backup">Fazer backup</button></div>`;
+function lensPreview(){
+  const el=$("#lensPreview"); if(!el) return;
+  const {out,bad}=parseFocais(($("#sh-focais")||{}).value), mi=num(($("#sh-maxiris")||{}).value), st=($("#sh-stop")||{}).value||"T";
+  el.innerHTML=out.length?`Vai adicionar ${out.length} ${out.length===1?"lente":"lentes"}: <b>${esc(out.map(o=>o.zoom?`${fmtNum(o.focalMin)}-${fmtNum(o.focalMax)}`:fmtNum(o.focal)).join(" · "))}</b>${mi>0?` · ${esc(st+fmtNum(mi))}`:""}${bad.length?` <span class="over">Não entendi: ${esc(bad.join(", "))}</span>`:""}`:(bad.length?`<span class="over">Não entendi: ${esc(bad.join(", "))}</span>`:"");
 }
-function nextRoll(r){const m=String(r).match(/^(.*?)(\d+)$/);return m?m[1]+String(Number(m[2])+1).padStart(m[2].length,"0"):r+"2"}
-function nextUnitLetter(){return "ABCDEFGH".split("").find(l=>!S.cfg.unitOrder.includes(l))}
-const maxDiaria=()=>Math.max(...S.cfg.diarias.map(d=>Number(d.n)||0));
 
 /* ===================== Ações ===================== */
 let toastTimer=null;
@@ -678,172 +960,279 @@ function toast(msg,undo,label,act,ms){
 }
 function arm(k){armed=k;setTimeout(()=>{if(armed===k){armed=null;render()}},4000)}
 function setCur(f,v){
-  const u=U(), c=u.cur, C=cam(u.camId);
-  if(f==="lensId"){c.lensId=v;const L=lens(v);if(L){if(c.t<L.maxT)c.t=L.maxT;c.focal=L.zoom?(c.focal&&c.focal>=L.focalMin&&c.focal<=L.focalMax?c.focal:L.focalMin):null}}
-  else if(["t","shDeg","shFrac","fps","iso","wb","focal"].includes(f)) c[f]=Number(v);
+  const p=P(), u=U(), c=u.cur;
+  if(f==="lensId"){c.lensId=v;const L=lensById(p,v);if(L){if(c.iris<L.maxIris)c.iris=L.maxIris;c.focal=L.zoom?(c.focal&&c.focal>=L.focalMin&&c.focal<=L.focalMax?c.focal:L.focalMin):null}}
+  else c[f]=Number(v);
 }
 async function offerFile(name,text){
   const type=name.endsWith(".csv")?"text/csv":name.endsWith(".json")?"application/json":"text/plain";
   const blob=new Blob([text],{type});
   let touch=false; try{touch=matchMedia("(pointer:coarse)").matches}catch(e){}
   if(touch&&navigator.canShare&&typeof File==="function"){
-    try{
-      const file=new File([blob],name,{type});
-      if(navigator.canShare({files:[file]})){await navigator.share({files:[file],title:name});return "shared"}
-    }catch(e){if(e&&e.name==="AbortError")return "cancel"}
+    try{const file=new File([blob],name,{type}); if(navigator.canShare({files:[file]})){await navigator.share({files:[file],title:name});return "shared"}}
+    catch(e){if(e&&e.name==="AbortError")return "cancel"}
   }
   try{
     const url=URL.createObjectURL(blob), a=document.createElement("a");
     a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),5000); toast(`${name} salvo em Downloads`); return "saved";
-  }catch(e){
-    $("#modalTitle").textContent=name; $("#modalText").value=text.replace(/^﻿/,""); $("#modal").hidden=false; return "shown";
-  }
+  }catch(e){$("#modalTitle").textContent=name; $("#modalText").value=text.replace(/^﻿/,""); $("#modal").hidden=false; return "shown"}
 }
+const safeName=s=>String(s||"projeto").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^\w-]+/g,"_").replace(/^_+|_+$/g,"")||"projeto";
+function dayTsAt(date,time){if(!time) return null; const [y,m,d]=date.split("-").map(Number), [hh,mm]=time.split(":").map(Number); return new Date(y,m-1,d,hh,mm).getTime()}
 
 document.addEventListener("click",async e=>{
+  if(e.target.id==="sheet"){closeSheet();return}
   const el=e.target.closest("[data-act]"); if(!el) return;
-  const act=el.dataset.act, v=el.dataset.v, u=U();
+  const act=el.dataset.act, v=el.dataset.v, p=P(), u=U();
   switch(act){
-    case "tab": view=v; openTake=null; render(); window.scrollTo(0,0); return;
-    case "unit": S.cfg.active=v; commit(); render(); return;
+    /* navegação */
+    case "home": view="home"; closeSheet(); render(); window.scrollTo(0,0); return;
+    case "openProj": store.activeId=v; save(); view=store.projects[v].unitOrder.length?"take":"kit"; render(); window.scrollTo(0,0); return;
+    case "tab": view=v; openTake=null; armed=null; render(); window.scrollTo(0,0); return;
+    case "unit": p.active=v; commit(); render(); return;
+    case "sheet": {
+      if(v==="editCam"){const k=el.dataset.id; openSheet({type:"editCam",letter:k,draft:clone(p.units[k].model)}); return}
+      openSheet({type:v,id:el.dataset.id}); return;
+    }
+    case "closeSheet": closeSheet(); return;
+    /* projetos */
+    case "saveNewProj": {
+      const name=$("#sh-name").value.trim(); if(!name){toast("Dê um nome ao projeto");return}
+      const q=newProject(name,$("#sh-prod").value.trim()); store.projects[q.id]=q; store.order.push(q.id); store.activeId=q.id;
+      save(); sheet=null; view="kit"; render(); window.scrollTo(0,0); toast(`Projeto ${name} criado`); return;
+    }
+    case "saveRename": {const q=store.projects[sheet.id], name=$("#sh-name").value.trim(); if(!q||!name){toast("Dê um nome ao projeto");return} q.name=name; q.updatedAt=Date.now(); save(); sheet=null; render(); toast("Projeto renomeado"); return}
+    case "delProj": {
+      if(armed!=="delProj:"+v){arm("delProj:"+v);render();return}
+      delete store.projects[v]; store.order=store.order.filter(x=>x!==v); if(store.activeId===v) store.activeId=null;
+      armed=null; save(); view="home"; render(); toast("Projeto excluído"); return;
+    }
+    /* take */
     case "set": setCur(el.dataset.f,v); commit(); render(); return;
     case "shMode": u.cur.shMode=v; commit(); render(); return;
     case "ndInt": u.cur.ndInt=v===""?null:Number(v); commit(); render(); return;
     case "filter": {const i=u.cur.filters.indexOf(v); i<0?u.cur.filters.push(v):u.cur.filters.splice(i,1); commit(); render(); return}
     case "aval": u.cur.aval=u.cur.aval===v?"":v; commit(); render(); return;
+    case "measures": p.opts.measures=v==="1"; commit(); render(); return;
     case "takeStep": u.slate.take=Math.max(1,(parseInt(u.slate.take,10)||1)+Number(v)); commit(); render(); return;
+    case "clipStep": u.clip=Math.max(1,u.clip+Number(v)); commit(); render(); return;
+    case "setRec": u[el.dataset.f]=v; commit(); sheet=null; render(); return;
+    case "saveCard": {
+      const r=$("#sh-roll").value.trim().toUpperCase(); if(!r){toast("Digite o nome do cartão");return}
+      ensureDiaria(p); u.roll=r; u.clip=1; p.days[p.diariaKey].cards.push({unit:p.active,roll:r,ts:Date.now()});
+      commit(); sheet=null; render(); toast(`Cartão ${r} na CAM ${p.active} · começa em C001`); return;
+    }
     case "register": {
+      if(!u) return;
       document.activeElement&&document.activeElement.blur&&document.activeElement.blur();
-      const t=snapshot(S.cfg.active), key=S.cfg.diariaKey;
-      day().takes.push(t);
-      lastUndo={unit:S.cfg.active,id:t.id,key,clip:u.clip,take:u.slate.take,aval:u.cur.aval,obs:u.cur.obs};
+      ensureDiaria(p);
+      const key=p.diariaKey, day=p.days[key], t=snapshot(p,p.active);
+      if(!day.cards.some(c=>c.unit===p.active&&c.roll===u.roll)&&!day.takes.some(x=>x.unit===p.active&&x.roll===u.roll)) day.cards.push({unit:p.active,roll:u.roll,ts:Date.now()});
+      day.takes.push(t);
+      lastUndo={pid:p.id,unit:p.active,id:t.id,key,clip:u.clip,take:u.slate.take,aval:u.cur.aval,obs:u.cur.obs};
       u.clip+=1; u.slate.take=(parseInt(u.slate.take,10)||1)+1; u.cur.aval=""; u.cur.obs="";
-      commit(key); render(); toast(`${t.roll}C${pad3(t.clip)} registrado`,true);
+      commit(); render(); toast(`${t.roll}C${pad3(t.clip)} registrado`,true);
       if(navigator.vibrate) try{navigator.vibrate(15)}catch(_){}
       return;
     }
     case "undo": {
-      if(!lastUndo) return; const L=lastUndo, d=S.days[L.key], uu=S.cfg.units[L.unit];
+      if(!lastUndo) return; const L=lastUndo, q=store.projects[L.pid]; if(!q) return;
+      const d=q.days[L.key], uu=q.units[L.unit];
       if(d) d.takes=d.takes.filter(t=>t.id!==L.id);
       if(uu){uu.clip=L.clip;uu.slate.take=L.take;uu.cur.aval=L.aval;uu.cur.obs=L.obs}
-      lastUndo=null; commit(L.key); render(); toast("Take desfeito"); return;
+      lastUndo=null; commit(); render(); toast("Take desfeito"); return;
     }
+    /* boletim */
     case "openTake": openTake=openTake===v?null:v; armed=null; render(); return;
-    case "takeAval": {const d=S.days[el.dataset.f]; const t=d&&d.takes.find(x=>x.id===el.dataset.id); if(t){t.aval=t.aval===v?"":v; commit(d.key); render()} return}
+    case "takeAval": {const d=p.days[el.dataset.k]; const t=d&&d.takes.find(x=>x.id===el.dataset.id); if(t){t.aval=t.aval===v?"":v; commit(); render()} return}
     case "takeDel": {
       if(armed!=="del:"+v){arm("del:"+v);render();return}
-      const d=S.days[el.dataset.k]; if(d){d.takes=d.takes.filter(t=>t.id!==v); armed=null; openTake=null; commit(d.key); render(); toast("Take excluído")} return;
+      const d=p.days[el.dataset.k]; if(d){d.takes=d.takes.filter(t=>t.id!==v); armed=null; openTake=null; commit(); render(); toast("Take excluído")} return;
     }
-    case "exportTxt": {
-      const d=S.days[el.dataset.k]; const [un,roll]=v.split("|");
-      const takes=d.takes.filter(t=>t.unit===un&&t.roll===roll); offerFile(`${roll}.txt`,rollTxt(roll,takes)); return;
+    case "exportTxt": {const d=p.days[el.dataset.k]; const [un,roll]=v.split("|"); offerFile(`${roll}.txt`,rollTxt(roll,d.takes.filter(t=>t.unit===un&&t.roll===roll))); return}
+    case "exportCsv": {const d=p.days[el.dataset.k], meta=p.diarias.find(x=>x.key===el.dataset.k)||{n:"",date:""}; offerFile(`${safeName(p.name)}_diaria${meta.n}_${meta.date}.csv`,dayCsv(p,d,meta)); return}
+    case "exportResumo": {const d=p.days[el.dataset.k], meta=p.diarias.find(x=>x.key===el.dataset.k)||{n:"",date:""}; offerFile(`${safeName(p.name)}_diaria${meta.n}_resumo.txt`,dayResumo(p,d,meta)); return}
+    /* diárias */
+    case "pickDay": p.diariaKey=v; viewDay=v; commit(); sheet=null; render(); toast("Diária atual alterada"); return;
+    case "dayStart": {const d=p.diarias.find(x=>x.key=== el.dataset.k); if(d){d.start=Date.now(); d.end=null; commit(); render(); toast(`Diária ${d.n} iniciada às ${hhmm(d.start)}`)} return}
+    case "dayEnd": {const d=p.diarias.find(x=>x.key===el.dataset.k); if(d){d.end=Date.now(); commit(); render(); toast(`Diária ${d.n} encerrada · ${dur(d.end-d.start)}`)} return}
+    case "saveNewDay": {
+      const n=parseInt($("#sh-dn").value,10)||1, date=$("#sh-dd").value||today(), key=`d${n}-${date}-${newId().slice(0,4)}`;
+      p.diarias.push({key,n,date,start:null,end:null}); p.days[key]={takes:[],cards:[]}; p.diariaKey=key; viewDay=key;
+      commit(); sheet=null; render(); toast(`Diária ${n} criada`); return;
     }
-    case "exportCsv": {
-      const d=S.days[el.dataset.k]; const meta=S.cfg.diarias.find(x=>x.key===el.dataset.k)||{n:"",date:""};
-      offerFile(`boletim_diaria${meta.n}_${meta.date}.csv`,dayCsv(d,meta)); return;
+    case "saveDay": {
+      const d=p.diarias.find(x=>x.key===sheet.id); if(!d) return;
+      d.n=parseInt($("#sh-dn").value,10)||d.n; d.date=$("#sh-dd").value||d.date;
+      const s=dayTsAt(d.date,$("#sh-ds").value); let en=dayTsAt(d.date,$("#sh-de").value);
+      if(s&&en&&en<=s) en+=24*3600000;
+      d.start=s; d.end=s?en:null;
+      commit(); sheet=null; render(); toast(`Diária ${d.n} salva`); return;
     }
-    case "closeModal": $("#modal").hidden=true; return;
-    case "copyModal": {
-      const ta=$("#modalText");
-      try{await navigator.clipboard.writeText(ta.value);toast("Texto copiado")}catch(_){ta.focus();ta.select();toast("Texto selecionado: copie com o menu")}
-      return;
+    case "delDay": {
+      if(armed!=="delDay:"+v){arm("delDay:"+v);render();return}
+      p.diarias=p.diarias.filter(x=>x.key!==v); delete p.days[v]; if(viewDay===v) viewDay=null;
+      if(p.diariaKey===v) p.diariaKey=p.diarias.length?p.diarias.slice().sort((a,b)=>b.n-a.n)[0].key:null;
+      armed=null; commit(); render(); toast("Diária excluída"); return;
     }
-    case "backup": {
-      const r=await offerFile(`backup-boletim_${today()}.json`,backupData());
-      if(r!=="cancel"){S.cfg.lastBackup=Date.now();commit();render()}
-      return;
+    /* câmeras */
+    case "pickModel": {
+      const m=v?CATALOG.find(x=>x.catalogId===v):{catalogId:"",brand:"",name:"",isoLabel:"ISO",ei:[100,200,400,800,1600,3200,6400,12800],base:800,nd:[],sh:"frac",codecs:[],formats:[]};
+      if(v){const l=nextLetter(p); if(!l) return; p.units[l]=newUnit(l,m); p.unitOrder.push(l); p.active=l; commit(); sheet=null; render(); toast(`CAM ${l}: ${m.name} adicionada`); return}
+      openSheet({type:"editCam",letter:null,draft:clone(m)}); return;
     }
+    case "draftDel": {readDraft(); sheet.draft[el.dataset.f].splice(Number(v),1); renderSheet(); return}
+    case "draftAdd": {readDraft(); const inp=$("#"+v), val=inp.value.trim(); if(!val) return; if(!sheet.draft[el.dataset.f].includes(val)) sheet.draft[el.dataset.f].push(val); renderSheet(); const n=$("#"+v); if(n)n.focus(); return}
+    case "saveCam": {
+      readDraft(); const m=sheet.draft;
+      if(!m.name){toast("Digite o modelo da câmera");return}
+      if(!m.ei.length){toast("Digite pelo menos um ISO/EI");return}
+      if(!m.ei.includes(m.base)) m.base=m.ei.includes(800)?800:m.ei[0];
+      if(sheet.letter){
+        const uu=p.units[sheet.letter]; uu.model=m;
+        if(!m.codecs.includes(uu.codec)) uu.codec=m.codecs[0]||"";
+        if(!m.formats.includes(uu.format)) uu.format=m.formats[0]||"";
+        if(!m.ei.includes(uu.cur.iso)) uu.cur.iso=m.base;
+        if(uu.cur.ndInt&&!m.nd.includes(uu.cur.ndInt)) uu.cur.ndInt=null;
+        const lt=sheet.letter; commit(); sheet=null; render(); toast(`CAM ${lt}: ${m.name} salva`); return;
+      }
+      const l=nextLetter(p); if(!l) return; p.units[l]=newUnit(l,m); p.unitOrder.push(l); p.active=l; commit(); sheet=null; render(); toast(`CAM ${l}: ${m.name} adicionada`); return;
+    }
+    case "delUnit": {
+      if(armed!=="delUnit:"+v){arm("delUnit:"+v);render();return}
+      delete p.units[v]; p.unitOrder=p.unitOrder.filter(x=>x!==v); if(p.active===v) p.active=p.unitOrder[0]||null;
+      armed=null; commit(); render(); toast(`CAM ${v} excluída`); return;
+    }
+    /* lentes */
+    case "saveLenses": {
+      const series=$("#sh-series").value.trim(), {out,bad}=parseFocais($("#sh-focais").value), mi=num($("#sh-maxiris").value), st=$("#sh-stop").value;
+      if(!series){toast("Digite a marca e série");return}
+      if(!out.length||bad.length){toast(bad.length?`Não entendi: ${bad.join(", ")}`:"Digite as distâncias focais");return}
+      if(!(mi>0)){toast("Digite a íris máxima, ex.: 1.9");return}
+      out.forEach(o=>p.lenses.push({id:newId(),series,stop:st,maxIris:mi,...o}));
+      const u0=U(); if(u0&&!u0.cur.lensId){const f=allLensSorted(p)[0]; if(f){u0.cur.lensId=f.id; if(u0.cur.iris<f.maxIris)u0.cur.iris=f.maxIris; if(f.zoom)u0.cur.focal=f.focalMin}}
+      commit(); sheet=null; render(); toast(`${out.length} ${out.length===1?"lente adicionada":"lentes adicionadas"}`); return;
+    }
+    case "sheetLens": openSheet({type:"editLens",id:v}); return;
+    case "saveLens": {
+      const l=lensById(p,sheet.id); if(!l) return;
+      const {out,bad}=parseFocais($("#sh-focal").value), mi=num($("#sh-maxiris").value), series=$("#sh-series").value.trim();
+      if(out.length!==1||bad.length){toast("Focal: um número (35) ou uma faixa (24-70)");return}
+      if(!(mi>0)){toast("Íris máxima inválida");return}
+      if(!series){toast("Digite a marca e série");return}
+      delete l.focal; delete l.focalMin; delete l.focalMax; Object.assign(l,{series,maxIris:mi,stop:$("#sh-stop").value},out[0]);
+      commit(); sheet=null; render(); toast("Lente corrigida"); return;
+    }
+    case "delLens": {
+      if(armed!=="delLens:"+v){arm("delLens:"+v);renderSheet();return}
+      p.lenses=p.lenses.filter(l=>l.id!==v); p.unitOrder.forEach(k=>{if(p.units[k].cur.lensId===v)p.units[k].cur.lensId=null});
+      armed=null; commit(); sheet=null; render(); toast("Lente excluída"); return;
+    }
+    case "delSeries": {
+      if(armed!=="delSeries:"+v){arm("delSeries:"+v);render();return}
+      const ids=p.lenses.filter(l=>l.series===v).map(l=>l.id); p.lenses=p.lenses.filter(l=>l.series!==v);
+      p.unitOrder.forEach(k=>{if(ids.includes(p.units[k].cur.lensId))p.units[k].cur.lensId=null});
+      armed=null; commit(); render(); toast(`Série ${v} excluída`); return;
+    }
+    /* filtros */
+    case "togglePreset": {
+      const f=FILTER_PRESETS.find(x=>x.code===v), i=p.filters.findIndex(x=>x.code===v);
+      if(i>=0){const id=p.filters[i].id; p.filters.splice(i,1); p.unitOrder.forEach(k=>{p.units[k].cur.filters=p.units[k].cur.filters.filter(x=>x!==id)})}
+      else if(f) p.filters.push({id:newId(),...f});
+      commit(); render(); return;
+    }
+    case "addCustomFilter": {
+      const g=$("#sh-fgroup").value.trim(), l=$("#sh-flabel").value.trim(); let c=$("#sh-fcode").value.trim().replace(/\s+/g,"");
+      if(!g&&!l){toast("Preencha o tipo do filtro");return} if(!c) c=(g+l).replace(/\s+/g,"");
+      p.filters.push({id:newId(),group:g||"Outros",label:l||g,code:c}); commit(); render(); toast(`${c} incluído`); return;
+    }
+    case "sheetFilter": openSheet({type:"editFilter",id:v}); return;
+    case "saveFilter": {
+      const f=filtById(p,sheet.id); if(!f) return;
+      const g=$("#sh-fgroup").value.trim(), l=$("#sh-flabel").value.trim(), c=$("#sh-fcode").value.trim().replace(/\s+/g,"");
+      if(!c){toast("A sigla não pode ficar vazia");return}
+      Object.assign(f,{group:g||"Outros",label:l||g||c,code:c}); commit(); sheet=null; render(); toast("Filtro corrigido"); return;
+    }
+    case "delFilter": {
+      if(armed!=="delFilter:"+v){arm("delFilter:"+v);renderSheet();return}
+      p.filters=p.filters.filter(f=>f.id!==v); p.unitOrder.forEach(k=>{p.units[k].cur.filters=p.units[k].cur.filters.filter(x=>x!==v)});
+      armed=null; commit(); sheet=null; render(); toast("Filtro excluído"); return;
+    }
+    /* equipe */
+    case "teamOpt": p.team[v]=(p.team[v]===null||p.team[v]===undefined)?"":null; commit(); render(); return;
+    case "addExtra": (p.team.extras=p.team.extras||[]).push({id:newId(),role:"",name:""}); commit(); render(); return;
+    case "delExtra": p.team.extras=p.team.extras.filter(x=>x.id!==v); commit(); render(); return;
+    /* backup e app */
+    case "backup": {const r=await offerFile(`backup-boletim_${today()}.json`,backupData()); if(r!=="cancel"){store.lastBackup=Date.now();save();render()} return}
     case "restorePick": $("#restoreFile").value=""; $("#restoreFile").click(); return;
-    case "restoreApply": {
-      if(!pendingRestore) return;
-      S=pendingRestore.data; pendingRestore=null; viewDay=null; openTake=null; armed=null;
-      saveLocal(); render(); toast("Backup restaurado"); return;
-    }
+    case "restoreApply": {if(!pendingRestore) return; store=pendingRestore.data; pendingRestore=null; viewDay=null; openTake=null; armed=null; view="home"; save(); render(); toast("Backup restaurado"); return}
     case "restoreCancel": pendingRestore=null; render(); return;
     case "reload": location.reload(); return;
     case "install": if(installEvt){installEvt.prompt();try{await installEvt.userChoice}catch(_){}installEvt=null;render()} return;
-    case "kitLens": {const a=S.cfg.kitLenses,i=a.indexOf(v); i<0?a.push(v):a.splice(i,1); commit(); render(); return}
-    case "kitFilter": {const a=S.cfg.kitFilters,i=a.indexOf(v); i<0?a.push(v):a.splice(i,1); commit(); render(); return}
-    case "addUnit": {const l=nextUnitLetter(); if(!l) return; S.cfg.units[l]=newUnit(l,u.camId); S.cfg.unitOrder.push(l); commit(); render(); toast(`Câmera ${l} adicionada`); return}
-    case "rmUnit": {
-      if(armed!=="rmUnit:"+v){arm("rmUnit:"+v);render();return}
-      delete S.cfg.units[v]; S.cfg.unitOrder=S.cfg.unitOrder.filter(x=>x!==v); if(S.cfg.active===v)S.cfg.active=S.cfg.unitOrder[0];
-      armed=null; commit(); render(); return;
-    }
-    case "newRoll": {const uu=S.cfg.units[v]; uu.roll=nextRoll(uu.roll); uu.clip=1; commit(); render(); toast(`Cartão ${uu.roll} na CAM ${v}`); return}
-    case "newDay": {
-      if(armed!=="newDay"){arm("newDay");render();return}
-      const n=maxDiaria()+1, key=`d${n}-${today()}`;
-      S.cfg.diarias.push({key,n,date:today()}); S.days[key]={key,updatedAt:Date.now(),takes:[]}; S.cfg.diariaKey=key; viewDay=key;
-      armed=null; commit(key); render(); toast(`Diária ${n} começou`); return;
-    }
-    case "addLens": {
-      const series=$("#nl-series").value.trim(), fs=$("#nl-focal").value.trim(), t=parseFloat(String($("#nl-t").value).replace(",","."));
-      const m=fs.match(/^(\d+)\s*[-–]\s*(\d+)$/), f=parseInt(fs,10);
-      if(!series||!(m||f)||!(t>0)){toast("Preencha série, focal e T máximo");return}
-      const base={id:"c-"+newId(),brand:"",short:"",series,seriesShort:series,fmt:"",maxT:t};
-      const L=m?{...base,zoom:true,focalMin:+m[1],focalMax:+m[2]}:{...base,zoom:false,focal:f,tag:""};
-      S.cfg.custom.lenses.push(L); S.cfg.kitLenses.push(L.id); commit(); render(); toast(`${lensLabel(L)} no kit`); return;
-    }
-    case "addFilter": {
-      const g=$("#nf-group").value.trim(), l=$("#nf-label").value.trim(); let c=$("#nf-code").value.trim().replace(/\s+/g,"");
-      if(!g&&!l){toast("Preencha o tipo do filtro");return}
-      if(!c) c=(g+l).replace(/\s+/g,"");
-      const F={id:"c-"+newId(),group:g||"Outros",label:l||g,code:c}; S.cfg.custom.filters.push(F); S.cfg.kitFilters.push(F.id); commit(); render(); toast(`${F.code} no kit`); return;
-    }
-    case "addCam": {
-      const name=$("#nc-name").value.trim();
-      const list=s=>String(s).split(/[,;\s]+/).map(x=>parseFloat(x.replace(",","."))).filter(x=>x>0);
-      const iso=[...new Set(list($("#nc-iso").value))].sort((a,b)=>a-b);
-      if(!name||!iso.length){toast("Preencha modelo e ISOs");return}
-      let base=parseInt($("#nc-base").value,10); if(!iso.includes(base)) base=iso[0];
-      const codecs=$("#nc-codecs").value.split(",").map(x=>x.trim()).filter(Boolean);
-      const C={id:"c-"+newId(),brand:"",name,sensor:"",ei:iso,base,nd:list($("#nc-nd").value),sh:$("#nc-sh").value,isoLabel:$("#nc-isol").value,codecs:codecs.length?codecs:["—"]};
-      S.cfg.custom.cameras.push(C); commit(); render(); toast(`${name} cadastrada. Escolha no modelo da câmera.`); return;
-    }
+    case "closeModal": $("#modal").hidden=true; return;
+    case "copyModal": {const ta=$("#modalText"); try{await navigator.clipboard.writeText(ta.value);toast("Texto copiado")}catch(_){ta.focus();ta.select();toast("Texto selecionado: copie com o menu")} return}
   }
 });
+function readDraft(){
+  if(!sheet||!sheet.draft) return; const m=sheet.draft;
+  document.querySelectorAll("#sheetIn [data-draft]").forEach(i=>{
+    const f=i.dataset.draft, v=i.value;
+    if(f==="ei") m.ei=numList(v); else if(f==="nd") m.nd=numList(v); else if(f==="base") m.base=num(v)||0; else m[f]=v.trim();
+  });
+}
 
 function onBind(el,final){
-  const b=el.dataset.bind, v=el.value, u=U();
+  const b=el.dataset.bind, v=el.value, p=P(), u=U();
   switch(b){
     case "cena": u.slate.cena=v; updatePreview(); if(final)commit(); return;
     case "plano": u.slate.plano=v; updatePreview(); if(final)commit(); return;
     case "obs": u.cur.obs=v; updatePreview(); if(final)commit(); return;
-    case "producao": S.cfg.producao=v; if(final)commit(); return;
-    case "takeObs": if(!final) return; {const d=S.days[el.dataset.k]; const t=d&&d.takes.find(x=>x.id===el.dataset.id); if(t){t.obs=v.trim();commit(d.key)}} return;
+    case "dist": case "alt": u.cur[b]=v.replace(",","."); updatePreview(); if(final)commit(); return;
+    case "projName": if(final){const n=v.trim(); if(n){p.name=n; commit()} else {el.value=p.name; toast("O projeto precisa de um nome")}} return;
+    case "projProd": if(final){p.produtora=v.trim(); commit()} return;
+    case "team": if(final){p.team[el.dataset.f]=v.trim(); commit()} return;
+    case "extra": if(final){const x=p.team.extras.find(x=>x.id===el.dataset.id); if(x){x[el.dataset.f]=v.trim(); commit()}} return;
+    case "takeField": if(!final) return; {
+      const d=p.days[el.dataset.k], t=d&&d.takes.find(x=>x.id===el.dataset.id), f=el.dataset.f; if(!t) return;
+      if(f==="clip"||f==="take") t[f]=Math.max(1,parseInt(v,10)||1); else t[f]=v.trim();
+      commit(); render();
+    } return;
     case "viewDay": if(final){viewDay=v;openTake=null;render()} return;
-    case "roll": if(final){const uu=S.cfg.units[el.dataset.u]; uu.roll=v.trim().toUpperCase()||uu.roll; commit(); render()} return;
-    case "clip": if(final){const uu=S.cfg.units[el.dataset.u]; uu.clip=Math.max(1,parseInt(v,10)||1); commit(); render()} return;
-    case "codec": if(final){S.cfg.units[el.dataset.u].codec=v; commit()} return;
-    case "camId": if(final){
-      const uu=S.cfg.units[el.dataset.u], C=cam(v); if(!C) return; uu.camId=v;
-      if(!C.ei.includes(uu.cur.iso)) uu.cur.iso=C.base;
-      uu.cur.shMode=C.sh; if(!C.nd.includes(uu.cur.ndInt)) uu.cur.ndInt=null;
-      if(!C.codecs.includes(uu.codec)) uu.codec=C.codecs[0];
-      commit(); render();} return;
-    case "focal": case "wb": case "shDeg": case "shFrac": if(final){
-      const n=parseFloat(String(v).replace(",",".")); if(!(n>0)) return;
-      if(b==="focal"){const L=lens(u.cur.lensId); if(!L||!L.zoom||n<L.focalMin||n>L.focalMax){toast("Fora da faixa da zoom");return}}
-      u.cur[b]=b==="shDeg"?n:Math.round(n); commit(); render();} return;
+    case "roll": if(final){const uu=p.units[el.dataset.u]; const r=v.trim().toUpperCase(); if(r&&r!==uu.roll){uu.roll=r; ensureDiaria(p); p.days[p.diariaKey].cards.push({unit:el.dataset.u,roll:r,ts:Date.now()})} commit(); render()} return;
+    case "clip": if(final){const uu=p.units[el.dataset.u]; uu.clip=Math.max(1,parseInt(v,10)||1); commit(); render()} return;
+    case "codec": case "format": if(final){p.units[el.dataset.u][b]=v; commit()} return;
+    case "focal": case "wb": case "shDeg": case "shFrac": case "iris": if(final){
+      const n=num(v); if(!(n>0)) return;
+      if(b==="focal"){const L=lensById(p,u.cur.lensId); if(!L||!L.zoom||n<L.focalMin||n>L.focalMax){toast("Fora da faixa da zoom");return}}
+      u.cur[b]=(b==="shDeg"||b==="iris"||b==="focal")?Math.round(n*100)/100:Math.round(n); commit(); render();} return;
   }
 }
-document.addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.bind)onBind(e.target,false)});
-document.addEventListener("change",e=>{if(e.target.dataset&&e.target.dataset.bind)onBind(e.target,true)});
-document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches("input[data-bind]")){e.target.blur()}});
-
-/* ===================== Início ===================== */
+document.addEventListener("input",e=>{
+  if(e.target.dataset&&e.target.dataset.bind) onBind(e.target,false);
+  if(e.target.dataset&&e.target.dataset.live==="lenses") lensPreview();
+});
+document.addEventListener("change",e=>{
+  if(e.target.dataset&&e.target.dataset.bind) onBind(e.target,true);
+  if(e.target.dataset&&e.target.dataset.live==="lenses") lensPreview();
+});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&e.target.matches("input[data-bind]")) e.target.blur();
+  if(e.key==="Escape"&&sheet) closeSheet();
+});
 $("#restoreFile").addEventListener("change",async e=>{
   const f=e.target.files&&e.target.files[0]; if(!f) return;
   try{
-    const p=parseBackup(await f.text());
-    const n=Object.values(p.data.days).reduce((a,d)=>a+((d&&d.takes)||[]).length,0);
-    pendingRestore={data:p.data,exportedAt:p.exportedAt,takes:n,name:f.name}; view="kit"; render(); window.scrollTo(0,0);
+    const r=parseBackup(await f.text()), ps=Object.values(r.data.projects);
+    const takes=ps.reduce((a,p)=>a+Object.values(p.days).reduce((b,d)=>b+((d&&d.takes)||[]).length,0),0);
+    pendingRestore={data:r.data,exportedAt:r.exportedAt,projects:ps.length,takes,name:f.name}; view="home"; render(); window.scrollTo(0,0);
   }catch(err){toast("Esse arquivo não é um backup do Boletim de Câmera")}
 });
+setInterval(()=>{const p=P(); if(p&&(view==="kit"||view==="boletim")){const d=curDiaria(p); if(d&&d.start&&!d.end&&!sheet&&!document.activeElement.matches("input,select")) render()}},60000);
 
-S=loadLocal()||fresh();
+/* ===================== Início ===================== */
+store=load();
+if(store.activeId&&store.projects[store.activeId]) view=store.projects[store.activeId].unitOrder.length?"take":"kit";
 render();
 askPersist();
 if("serviceWorker" in navigator&&location.protocol!=="file:"){
