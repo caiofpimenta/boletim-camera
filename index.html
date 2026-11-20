@@ -243,7 +243,8 @@ input.mono{font-family:var(--f-mono);font-weight:600}
 
 /* Folha de baixo (cadastros) */
 .sheet{position:fixed;inset:0;z-index:20;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center}
-.sheet-in{background:var(--surface);border:1px solid var(--line);border-radius:16px 16px 0 0;width:100%;max-width:640px;max-height:90vh;overflow:auto;
+.sheet-in>*{flex-shrink:0}
+.sheet-in{background:var(--surface);border:1px solid var(--line);border-radius:16px 16px 0 0;width:100%;max-width:640px;max-height:90vh;max-height:90dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;
   padding:14px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:12px}
 .sheet-h{display:flex;align-items:center;gap:10px}
 .sheet-h h2{font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.04em;margin:0}
@@ -1015,7 +1016,7 @@ function renderSheet(){
   const p=P(); let h="";
   switch(sheet.type){
     case "newProj": h=sheetWrap("Novo projeto",`<div class="form">
-        <label class="full">Nome do projeto<input type="text" id="sh-name" data-autofocus placeholder="ex.: Curta Capim"></label>
+        <label class="full">Nome do projeto<input type="text" id="sh-name" data-autofocus placeholder="ex.: Nome do filme"></label>
         <label class="full">Produtora (opcional)<input type="text" id="sh-prod"></label></div>
         <span class="hint">Depois você cadastra câmeras, lentes, filtros e a equipe. A diária 1 já começa com a data de hoje.</span>`,
         `<button type="button" class="btn pri" data-act="saveNewProj">Criar projeto</button>`); break;
